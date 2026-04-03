@@ -1,7 +1,8 @@
 "use client"
 
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import React from "react"
+import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 
@@ -42,14 +43,46 @@ const buttonVariants = cva(
   }
 )
 
+type ButtonProps = React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & { asChild?: boolean }
+
 function Button({
   className,
   variant = "default",
   size = "default",
+  asChild = false,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
+  if (asChild) {
+    const child = (Array.isArray(children) ? children[0] : children) as React.ReactElement<{
+      className?: string
+    }> | null
+    if (!child) return null
+
+    return React.cloneElement(child, {
+      ...props,
+      className: cn(buttonVariants({ variant, size, className }), child.props?.className),
+    })
+  }
+
   return (
-    <ButtonPrimitive
+    <button
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+type ButtonLinkProps = React.ComponentProps<typeof Link> &
+  VariantProps<typeof buttonVariants>
+
+function ButtonLink({ className, variant, size, ...props }: ButtonLinkProps) {
+  return (
+    <Link
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
@@ -57,4 +90,4 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+export { Button, ButtonLink, buttonVariants }
