@@ -36,10 +36,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-slate-900 flex flex-col h-full">
+    <aside className="w-56 shrink-0 bg-slate-900 flex flex-col h-full">
       {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-2.5">
-        <div className="h-7 w-7 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+        <div className="h-7 w-7 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
           <BookMarked className="h-4 w-4 text-white" />
         </div>
         <span className="font-semibold text-white text-sm tracking-tight">Semester Planner</span>
@@ -58,7 +58,7 @@ export function Sidebar() {
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
             )}
           >
-            <Icon className="h-4 w-4 flex-shrink-0" />
+            <Icon className="h-4 w-4 shrink-0" />
             {label}
           </Link>
         ))}
@@ -78,7 +78,7 @@ export function Sidebar() {
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
             )}
           >
-            <Icon className="h-4 w-4 flex-shrink-0" />
+            <Icon className="h-4 w-4 shrink-0" />
             {label}
           </Link>
         ))}
@@ -90,7 +90,7 @@ export function Sidebar() {
           href="/login"
           className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors"
         >
-          <LogOut className="h-4 w-4 flex-shrink-0" />
+          <LogOut className="h-4 w-4 shrink-0" />
           Sign out
         </Link>
       </div>

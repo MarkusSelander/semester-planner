@@ -1,18 +1,15 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
+import { getCourseMeta, getCourseEvents } from '@/lib/queries'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ courseId: string }> }) {
   const auth = await getAuthUserId()
   if ('error' in auth) return auth.error
   const { courseId } = await params
 
-  const course = await prisma.course.findFirst({ where: { id: courseId, userId: auth.userId } })
+  const course = await getCourseMeta(auth.userId, courseId)
   if (!course) return err('Not found', 404)
 
-  const events = await prisma.event.findMany({
-    where: { courseId, userId: auth.userId },
-    orderBy: { startAt: 'asc' },
-  })
+  const events = await getCourseEvents(auth.userId, courseId)
   return ok(events)
 }

@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
 import { createRemindersForEvent } from '@/lib/reminders'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
@@ -210,6 +211,7 @@ Return ONLY a JSON object with this exact structure:
       },
     })
 
+    invalidateUserCache(auth.userId)
     return ok({
       importId: importRecord.id,
       eventsCreated: createdEvents.length,

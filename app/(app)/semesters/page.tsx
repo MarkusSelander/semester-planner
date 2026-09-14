@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, GraduationCap, Upload, ChevronRight } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
-import { format } from 'date-fns'
+import { formatDateOnly } from '@/lib/dates'
 
 export default async function SemestersPage() {
   const hdrs = await headers()
@@ -51,7 +51,7 @@ export default async function SemestersPage() {
                       )}
                     </div>
                     <p className="text-xs text-slate-400 tabular-nums">
-                      {format(semester.startDate, 'd MMM yyyy')} – {format(semester.endDate, 'd MMM yyyy')}
+                      {formatDateOnly(semester.startDate, 'd MMM yyyy')} – {formatDateOnly(semester.endDate, 'd MMM yyyy')}
                     </p>
                     <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
                       <span className="font-medium">{semester._count.courses} courses</span>

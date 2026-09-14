@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { TAGS } from '@/lib/queries'
+import { getCourses } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const CreateCourseSchema = z.object({
@@ -16,15 +16,8 @@ export async function GET(req: NextRequest) {
   const auth = await getAuthUserId()
   if ('error' in auth) return auth.error
 
-  const semesterId = req.nextUrl.searchParams.get('semesterId')
-  const courses = await prisma.course.findMany({
-    where: {
-      userId: auth.userId,
-      ...(semesterId ? { semesterId } : {}),
-    },
-    include: { _count: { select: { events: true } }, semester: { select: { name: true } } },
-    orderBy: [{ semester: { startDate: 'desc' } }, { name: 'asc' }],
-  })
+  const semesterId = req.nextUrl.searchParams.get('semesterId') ?? undefined
+  const courses = await getCourses(auth.userId, semesterId)
   return ok(courses)
 }
 
@@ -45,7 +38,6 @@ export async function POST(req: NextRequest) {
   const course = await prisma.course.create({
     data: { ...parsed.data, userId: auth.userId, color: parsed.data.color ?? '#3B82F6' },
   })
-  revalidateTag(TAGS.courses(auth.userId), { expire: 0 })
-  revalidateTag(TAGS.semesters(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['courses', 'semesters'])
   return ok(course, 201)
 }

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
           semester: { select: { name: true } },
         },
       },
-      user: { select: { email: true, emailReminders: true, fullName: true } },
+      user: { select: { email: true, emailReminders: true, fullName: true, timezone: true } },
     },
   })
 
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
           appUrl: process.env.NEXT_PUBLIC_APP_URL!,
           eventId: reminder.event.id,
           userName: reminder.user.fullName,
+          timeZone: reminder.user.timezone,
         }),
       })
 

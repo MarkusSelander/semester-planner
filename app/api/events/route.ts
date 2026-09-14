@@ -1,10 +1,9 @@
 import { NextRequest } from 'next/server'
-import { unstable_cache, revalidateTag } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
 import { createRemindersForEvent } from '@/lib/reminders'
-import { TAGS } from '@/lib/queries'
+import { TAGS, cachedQuery, invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 type RawEventRow = {
@@ -61,9 +60,12 @@ export async function GET(req: NextRequest) {
 
   const cacheKey = `events:${auth.userId}:${semesterId}:${courseId}:${type}:${done}:${from}:${to}`
 
-  const fetchEvents = unstable_cache(
+  const fetchEvents = () => cachedQuery(
+    [cacheKey],
+    [TAGS.events(auth.userId)],
+    30,
     async () => {
-      console.log(`[cache] MISS  ${cacheKey}`)
+      if (process.env.NODE_ENV !== 'production') console.log(`[cache] MISS  ${cacheKey}`)
       const whereClauses: Prisma.Sql[] = [Prisma.sql`e."userId" = ${auth.userId}`]
 
       if (semesterId) whereClauses.push(Prisma.sql`e."semesterId" = ${semesterId}`)
@@ -131,14 +133,10 @@ export async function GET(req: NextRequest) {
           color: row.course_color,
         },
       }))
-    },
-    [cacheKey],
-    { tags: [TAGS.events(auth.userId)], revalidate: 30 }
+    }
   )
 
-  const t0 = Date.now()
   const events = await fetchEvents()
-  console.log(`[cache] events resolved in ${Date.now() - t0}ms  key=${cacheKey}`)
   return ok(events)
 }
 
@@ -174,6 +172,6 @@ export async function POST(req: NextRequest) {
   })
 
   await createRemindersForEvent(event, user?.emailReminders ?? true)
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId)
   return ok(event, 201)
 }

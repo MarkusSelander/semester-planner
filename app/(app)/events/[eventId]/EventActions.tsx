@@ -44,7 +44,7 @@ export function EventActions({ eventId, isDone }: { eventId: string; isDone: boo
   }
 
   return (
-    <div className="flex gap-2 ml-4 flex-shrink-0">
+    <div className="flex gap-2 flex-shrink-0">
       <Button
         variant="outline"
         size="sm"

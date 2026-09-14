@@ -22,6 +22,7 @@ interface ReminderEmailProps {
   appUrl: string
   eventId: string
   userName?: string | null
+  timeZone?: string
 }
 
 export function ReminderEmail({
@@ -35,16 +36,19 @@ export function ReminderEmail({
   appUrl,
   eventId,
   userName,
+  timeZone = 'UTC',
 }: ReminderEmailProps) {
   const formattedDate = startAt.toLocaleDateString('en-GB', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone,
   })
   const formattedTime = startAt.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone,
   })
 
   const preview = `${eventTitle} is in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`

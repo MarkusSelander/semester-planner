@@ -1,5 +1,8 @@
-import { unstable_cache } from 'next/cache'
+import { cache } from 'react'
 import { prisma } from './prisma'
+import { TAGS, cachedQuery, toDate } from './cache'
+
+export { TAGS, invalidateUserCache } from './cache'
 
 type RawEventRow = {
   id: string
@@ -133,13 +136,8 @@ function mapRawEvent(row: RawEventRow) {
   }
 }
 
-export const TAGS = {
-  semesters: (userId: string) => `semesters:${userId}`,
-  courses: (userId: string) => `courses:${userId}`,
-  events: (userId: string) => `events:${userId}`,
-}
-
 function timed<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  if (process.env.NODE_ENV === 'production') return fn()
   const t0 = Date.now()
   return fn().then(result => {
     console.log(`[query] ${name}: ${Date.now() - t0}ms`)
@@ -147,22 +145,30 @@ function timed<T>(name: string, fn: () => Promise<T>): Promise<T> {
   })
 }
 
-export const getSemesters = (userId: string) =>
-  unstable_cache(
+export const getSemesters = cache((userId: string) =>
+  cachedQuery(
+    [`semesters:${userId}`],
+    [TAGS.semesters(userId)],
+    60,
     () =>
       timed('getSemesters', () =>
         prisma.semester.findMany({
           where: { userId },
           include: {
             _count: { select: { courses: true, events: true } },
-            courses: { select: { color: true }, take: 6 },
+            courses: { select: { id: true, color: true }, take: 6 },
           },
           orderBy: { startDate: 'desc' },
         })
-      ),
-    [`semesters:${userId}`],
-    { tags: [TAGS.semesters(userId)], revalidate: 60 }
-  )()
+      )
+  ).then(rows =>
+    rows.map(semester => ({
+      ...semester,
+      startDate: toDate(semester.startDate),
+      endDate: toDate(semester.endDate),
+    }))
+  )
+)
 
 type RawSemesterRow = {
   id: string
@@ -175,8 +181,11 @@ type RawSemesterRow = {
   course_colors: { id: string; name: string; code: string | null; color: string }[]
 }
 
-export const getActiveSemesters = (userId: string) =>
-  unstable_cache(
+export const getActiveSemesters = cache((userId: string) =>
+  cachedQuery(
+    [`semesters:active:${userId}`],
+    [TAGS.semesters(userId)],
+    60,
     () =>
       timed('getActiveSemesters', () =>
         prisma.$queryRaw<RawSemesterRow[]>`
@@ -207,30 +216,43 @@ export const getActiveSemesters = (userId: string) =>
           ORDER BY s."startDate" DESC
           LIMIT 3
         `.then(rows => rows.map(mapRawSemester))
-      ),
-    [`semesters:active:${userId}`],
-    { tags: [TAGS.semesters(userId)], revalidate: 60 }
-  )()
+      )
+  ).then(rows =>
+    rows.map(semester => ({
+      ...semester,
+      startDate: toDate(semester.startDate),
+      endDate: toDate(semester.endDate),
+    }))
+  )
+)
 
-export const getCourses = (userId: string) =>
-  unstable_cache(
+export const getCourses = cache((userId: string, semesterId?: string) =>
+  cachedQuery(
+    [`courses:${userId}:${semesterId ?? ''}`],
+    [TAGS.courses(userId), TAGS.semesters(userId)],
+    60,
     () =>
       timed('getCourses', () =>
         prisma.course.findMany({
-          where: { userId },
+          where: {
+            userId,
+            ...(semesterId ? { semesterId } : {}),
+          },
           include: {
             semester: { select: { name: true } },
             _count: { select: { events: true } },
           },
           orderBy: [{ semester: { startDate: 'desc' } }, { name: 'asc' }],
         })
-      ),
-    [`courses:${userId}`],
-    { tags: [TAGS.courses(userId)], revalidate: 60 }
-  )()
+      )
+  )
+)
 
-export const getUpcomingEvents = (userId: string) =>
-  unstable_cache(
+export const getUpcomingEvents = cache((userId: string) =>
+  cachedQuery(
+    [`events:upcoming:${userId}`],
+    [TAGS.events(userId)],
+    30,
     () =>
       timed('getUpcomingEvents', () =>
         prisma.event.findMany({
@@ -240,20 +262,29 @@ export const getUpcomingEvents = (userId: string) =>
             title: true,
             type: true,
             startAt: true,
+            isAllDay: true,
             course: { select: { name: true, code: true, color: true } },
           },
           orderBy: { startAt: 'asc' },
           take: 8,
         })
-      ),
-    [`events:upcoming:${userId}`],
-    { tags: [TAGS.events(userId)], revalidate: 30 }
-  )()
+      )
+  ).then(events =>
+    events.map(event => ({
+      ...event,
+      type: String(event.type),
+      startAt: toDate(event.startAt),
+    }))
+  )
+)
 
-export const getEvent = (userId: string, eventId: string) =>
-  unstable_cache(
+export const getEvent = cache((userId: string, eventId: string) =>
+  cachedQuery(
+    [`event:${userId}:${eventId}`],
+    [TAGS.events(userId)],
+    30,
     async () => {
-      console.log(`[cache] MISS  event:${userId}:${eventId}`)
+      if (process.env.NODE_ENV !== 'production') console.log(`[cache] MISS  event:${userId}:${eventId}`)
       const rows = await prisma.$queryRaw<RawEventRow[]>`
         SELECT
           e.*,
@@ -272,13 +303,81 @@ export const getEvent = (userId: string, eventId: string) =>
       `
       if (!rows.length) return null
       return mapRawEvent(rows[0])
-    },
-    [`event:${userId}:${eventId}`],
-    { tags: [TAGS.events(userId)], revalidate: 30 }
-  )()
+    }
+  ).then(event => {
+    if (!event) return null
+    return {
+      ...event,
+      startAt: toDate(event.startAt),
+      endAt: event.endAt ? toDate(event.endAt) : null,
+      doneAt: event.doneAt ? toDate(event.doneAt) : null,
+      createdAt: toDate(event.createdAt),
+      updatedAt: toDate(event.updatedAt),
+    }
+  })
+)
 
-export const getTimelineEvents = (userId: string, limit = 500) =>
-  unstable_cache(
+export type ListEvent = {
+  id: string
+  title: string
+  type: string
+  startAt: string
+  isDone: boolean
+  isAllDay: boolean
+  course: { id: string; name: string; code: string | null; color: string }
+}
+
+export const getFilteredEvents = cache((
+  userId: string,
+  filters: { semesterId?: string; type?: string; types?: string[]; done?: string }
+): Promise<ListEvent[]> => {
+  const key = `events:list:${userId}:${filters.semesterId ?? ''}:${filters.type ?? ''}:${(filters.types ?? []).join(',')}:${filters.done ?? ''}`
+  return cachedQuery(
+    [key],
+    [TAGS.events(userId)],
+    30,
+    async () => {
+      const rows = await prisma.event.findMany({
+        where: {
+          userId,
+          ...(filters.semesterId ? { semesterId: filters.semesterId } : {}),
+          ...(filters.types?.length
+            ? { type: { in: filters.types as any[] } }
+            : filters.type ? { type: filters.type as any } : {}),
+          ...(filters.done !== undefined && filters.done !== ''
+            ? { isDone: filters.done === 'true' }
+            : {}),
+        },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          startAt: true,
+          isDone: true,
+          isAllDay: true,
+          course: { select: { id: true, name: true, code: true, color: true } },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 500,
+      })
+      return rows.map(e => ({
+        id: e.id,
+        title: e.title,
+        type: String(e.type),
+        startAt: e.startAt.toISOString(),
+        isDone: e.isDone,
+        isAllDay: e.isAllDay,
+        course: e.course,
+      }))
+    }
+  )
+})
+
+export const getTimelineEvents = cache((userId: string, limit = 500) =>
+  cachedQuery(
+    [`timeline:${userId}:${limit}`],
+    [TAGS.events(userId), TAGS.courses(userId), TAGS.semesters(userId)],
+    30,
     () =>
       timed('getTimelineEvents', () =>
         prisma.$queryRaw<RawTimelineRow[]>`
@@ -302,7 +401,205 @@ export const getTimelineEvents = (userId: string, limit = 500) =>
           ORDER BY e."startAt" ASC
           LIMIT ${limit}
         `.then(rows => rows.map(mapRawTimelineEvent))
-      ),
-    [`timeline:${userId}:${limit}`],
-    { tags: [TAGS.events(userId), TAGS.courses(userId), TAGS.semesters(userId)], revalidate: 30 }
-  )()
+      )
+  ).then(events =>
+    events.map(event => ({
+      ...event,
+      startAt: toDate(event.startAt),
+    }))
+  )
+)
+
+export const getCourse = cache(async (userId: string, courseId: string) => {
+  const course = await cachedQuery(
+    [`course:${userId}:${courseId}`],
+    [TAGS.courses(userId), TAGS.events(userId), TAGS.semesters(userId)],
+    30,
+    () =>
+      timed('getCourse', () =>
+        prisma.course.findFirst({
+          where: { id: courseId, userId },
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            color: true,
+            semester: { select: { id: true, name: true } },
+            events: {
+              orderBy: { startAt: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                startAt: true,
+                isDone: true,
+                isAllDay: true,
+              },
+            },
+          },
+        })
+      )
+  )
+  if (!course) return null
+  return {
+    ...course,
+    events: course.events.map(event => ({
+      ...event,
+      type: String(event.type),
+      startAt: toDate(event.startAt),
+      isAllDay: event.isAllDay,
+    })),
+  }
+})
+
+export const getCourseMeta = cache((userId: string, courseId: string) =>
+  cachedQuery(
+    [`course:meta:${userId}:${courseId}`],
+    [TAGS.courses(userId)],
+    60,
+    () =>
+      prisma.course.findFirst({
+        where: { id: courseId, userId },
+        select: { id: true, name: true, code: true, color: true, semesterId: true },
+      })
+  )
+)
+
+export const getSemester = cache(async (userId: string, semesterId: string) => {
+  const semester = await cachedQuery(
+    [`semester:${userId}:${semesterId}`],
+    [TAGS.semesters(userId), TAGS.courses(userId), TAGS.events(userId)],
+    30,
+    () =>
+      timed('getSemester', () =>
+        prisma.semester.findFirst({
+          where: { id: semesterId, userId },
+          include: {
+            courses: {
+              include: { _count: { select: { events: true } } },
+              orderBy: { name: 'asc' },
+            },
+            events: {
+              where: { isDone: false, startAt: { gte: new Date() } },
+              include: { course: { select: { name: true, code: true, color: true } } },
+              orderBy: { startAt: 'asc' },
+              take: 10,
+            },
+            _count: { select: { events: true } },
+          },
+        })
+      )
+  )
+  if (!semester) return null
+  return {
+    ...semester,
+    startDate: toDate(semester.startDate),
+    endDate: toDate(semester.endDate),
+    events: semester.events.map(event => ({
+      ...event,
+      startAt: toDate(event.startAt),
+    })),
+  }
+})
+
+export const getSemesterMeta = cache((userId: string, semesterId: string) =>
+  cachedQuery(
+    [`semester:meta:${userId}:${semesterId}`],
+    [TAGS.semesters(userId)],
+    60,
+    () =>
+      prisma.semester.findFirst({
+        where: { id: semesterId, userId },
+        select: { id: true, name: true, startDate: true, endDate: true, isActive: true },
+      })
+  ).then(semester =>
+    semester
+      ? {
+          ...semester,
+          startDate: toDate(semester.startDate).toISOString(),
+          endDate: toDate(semester.endDate).toISOString(),
+        }
+      : null
+  )
+)
+
+export type CalendarEvent = {
+  id: string
+  title: string
+  startAt: string
+  endAt: string | null
+  isAllDay: boolean
+  type: string
+  course: { color: string; name: string; code: string | null }
+}
+
+export const getCalendarEvents = cache((userId: string): Promise<CalendarEvent[]> =>
+  cachedQuery(
+    [`events:calendar:${userId}`],
+    [TAGS.events(userId), TAGS.courses(userId)],
+    30,
+    async () => {
+      const rows = await prisma.event.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          title: true,
+          startAt: true,
+          endAt: true,
+          isAllDay: true,
+          type: true,
+          course: { select: { color: true, name: true, code: true } },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 500,
+      })
+      return rows.map(event => ({
+        id: event.id,
+        title: event.title,
+        startAt: event.startAt.toISOString(),
+        endAt: event.endAt?.toISOString() ?? null,
+        isAllDay: event.isAllDay,
+        type: String(event.type),
+        course: event.course,
+      }))
+    }
+  )
+)
+
+export const getUserProfile = cache((userId: string) =>
+  cachedQuery(
+    [`user:${userId}`],
+    [TAGS.user(userId)],
+    60,
+    () => prisma.user.findUnique({ where: { id: userId } })
+  )
+)
+
+export const getCourseEvents = cache((userId: string, courseId: string) =>
+  cachedQuery(
+    [`events:course:${userId}:${courseId}`],
+    [TAGS.events(userId)],
+    30,
+    () =>
+      prisma.event.findMany({
+        where: { courseId, userId },
+        orderBy: { startAt: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          startAt: true,
+          endAt: true,
+          isAllDay: true,
+          isDone: true,
+        },
+      })
+  ).then(events =>
+    events.map(event => ({
+      ...event,
+      type: String(event.type),
+      startAt: toDate(event.startAt).toISOString(),
+      endAt: event.endAt ? toDate(event.endAt).toISOString() : null,
+    }))
+  )
+)

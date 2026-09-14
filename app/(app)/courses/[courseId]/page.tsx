@@ -1,10 +1,18 @@
 import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { getCourse } from '@/lib/queries'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit, CalendarDays, CheckCircle2, Clock3 } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
-import { format, isToday, isBefore } from 'date-fns'
+import { isBefore } from 'date-fns'
+import {
+  dateLabel,
+  formatEvent,
+  formatMonthHeading,
+  isTodayTz,
+  monthKeyFor,
+} from '@/lib/dates'
+import { getRequestTimezone } from '@/lib/dates.server'
 
 const typeColors: Record<string, string> = {
   EXAM: 'bg-red-100 text-red-700',
@@ -15,9 +23,9 @@ const typeColors: Record<string, string> = {
   OTHER: 'bg-gray-100 text-gray-600',
 }
 
-function eventStatus(event: { isDone: boolean; startAt: Date }) {
+function eventStatus(event: { isDone: boolean; startAt: Date }, timeZone: string) {
   if (event.isDone) return { label: 'Done', cls: 'bg-emerald-100 text-emerald-700' }
-  if (isToday(event.startAt)) return { label: 'Today', cls: 'bg-blue-100 text-blue-700' }
+  if (isTodayTz(event.startAt, timeZone)) return { label: 'Today', cls: 'bg-blue-100 text-blue-700' }
   if (isBefore(event.startAt, new Date())) return { label: 'Overdue', cls: 'bg-red-100 text-red-700' }
   return { label: 'Upcoming', cls: 'bg-slate-100 text-slate-700' }
 }
@@ -26,14 +34,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
   const { courseId } = await params
   const userId = (await headers()).get('x-user-id')
   if (!userId) redirect('/login')
+  const timeZone = await getRequestTimezone()
 
-  const course = await prisma.course.findFirst({
-    where: { id: courseId, userId },
-    include: {
-      semester: true,
-      events: { orderBy: { startAt: 'asc' } },
-    },
-  })
+  const course = await getCourse(userId, courseId)
   if (!course) notFound()
 
   const now = new Date()
@@ -42,7 +45,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
   const overdueEvents = course.events.filter(event => event.startAt < now && !event.isDone)
 
   const eventsByMonth = course.events.reduce<Record<string, typeof course.events>>((acc, event) => {
-    const key = format(event.startAt, 'yyyy-MM')
+    const key = monthKeyFor(event.startAt, timeZone, event.isAllDay)
     if (!acc[key]) acc[key] = []
     acc[key].push(event)
     return acc
@@ -88,7 +91,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                     className="block rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 hover:border-red-300 hover:bg-red-100/70"
                   >
                     <p className="truncate font-medium">{event.title}</p>
-                    <p className="text-red-600">{format(event.startAt, 'd MMM · HH:mm')}</p>
+                    <p className="text-red-600">{dateLabel(event.startAt, timeZone, event.isAllDay)}</p>
                   </Link>
                 ))}
                 {overdueEvents.length > 3 && (
@@ -110,7 +113,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                     className="block rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   >
                     <p className="truncate font-medium">{event.title}</p>
-                    <p className="text-slate-500">{format(event.startAt, 'd MMM · HH:mm')}</p>
+                    <p className="text-slate-500">{dateLabel(event.startAt, timeZone, event.isAllDay)}</p>
                   </Link>
                 ))}
                 {upcomingEvents.length > 3 && (
@@ -132,7 +135,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                     className="block rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   >
                     <p className="truncate font-medium line-through text-slate-500">{event.title}</p>
-                    <p className="text-slate-500">{format(event.startAt, 'd MMM · HH:mm')}</p>
+                    <p className="text-slate-500">{dateLabel(event.startAt, timeZone, event.isAllDay)}</p>
                   </Link>
                 ))}
                 {doneEvents.length > 3 && (
@@ -162,12 +165,12 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
               return (
                 <section key={monthKey} className="space-y-2.5">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-1">
-                    {format(new Date(`${monthKey}-01`), 'MMMM yyyy')}
+                    {formatMonthHeading(monthKey, 'MMMM yyyy')}
                   </h3>
 
                   <div className="space-y-2">
                     {monthEvents.map(event => {
-                      const status = eventStatus(event)
+                      const status = eventStatus(event, timeZone)
                       return (
                       <Link
                         key={event.id}
@@ -192,7 +195,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                               <span className="inline-flex items-center gap-1">
                                 <Clock3 className="h-3 w-3" />
-                                {format(event.startAt, 'd MMM yyyy · HH:mm')}
+                                {event.isAllDay
+                                  ? formatEvent(event.startAt, 'd MMM yyyy', timeZone, true)
+                                  : formatEvent(event.startAt, 'd MMM yyyy · HH:mm', timeZone)}
                               </span>
                               {event.isDone && (
                                 <span className="inline-flex items-center gap-1 text-emerald-600">

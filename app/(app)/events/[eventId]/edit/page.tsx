@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import {
+  allDayToISO,
+  getBrowserTimezone,
+  toDateInputValue,
+  toTimeInputValue,
+  zonedDateTimeToISO,
+} from '@/lib/dates'
 
 const EVENT_TYPES = ['LECTURE', 'EXERCISE', 'ASSIGNMENT', 'EXAM', 'PROJECT', 'OTHER'] as const
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
@@ -40,10 +47,11 @@ export default function EditEventPage() {
         setType(ev.type)
         setPriority(ev.priority)
         setIsAllDay(ev.isAllDay)
+        const timeZone = getBrowserTimezone()
         const dt = new Date(ev.startAt)
-        setStartDate(dt.toISOString().split('T')[0])
-        setStartTime(dt.toISOString().split('T')[1].slice(0, 5))
-        if (ev.endAt) setEndTime(new Date(ev.endAt).toISOString().split('T')[1].slice(0, 5))
+        setStartDate(toDateInputValue(dt, timeZone, ev.isAllDay))
+        setStartTime(toTimeInputValue(dt, timeZone))
+        if (ev.endAt) setEndTime(toTimeInputValue(new Date(ev.endAt), timeZone))
         setDescription(ev.description ?? '')
         setLocation(ev.location ?? '')
         setUrl(ev.url ?? '')
@@ -54,11 +62,12 @@ export default function EditEventPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const timeZone = getBrowserTimezone()
     const startAt = isAllDay
-      ? `${startDate}T00:00:00+00:00`
-      : `${startDate}T${startTime}:00+00:00`
+      ? allDayToISO(startDate)
+      : zonedDateTimeToISO(startDate, startTime, timeZone)
     const endAt = !isAllDay && endTime
-      ? `${startDate}T${endTime}:00+00:00`
+      ? zonedDateTimeToISO(startDate, endTime, timeZone)
       : null
 
     setLoading(true)

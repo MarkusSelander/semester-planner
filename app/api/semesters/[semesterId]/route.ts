@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { TAGS } from '@/lib/queries'
+import { getSemesterMeta } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const UpdateSchema = z.object({
@@ -17,13 +17,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ semest
   if ('error' in auth) return auth.error
   const { semesterId } = await params
 
-  const semester = await prisma.semester.findFirst({
-    where: { id: semesterId, userId: auth.userId },
-    include: {
-      courses: { orderBy: { name: 'asc' } },
-      _count: { select: { events: true } },
-    },
-  })
+  const semester = await getSemesterMeta(auth.userId, semesterId)
   if (!semester) return err('Not found', 404)
   return ok(semester)
 }
@@ -48,7 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ seme
       endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : undefined,
     },
   })
-  revalidateTag(TAGS.semesters(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['semesters'])
   return ok(updated)
 }
 
@@ -61,8 +55,6 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ sem
   if (!existing) return err('Not found', 404)
 
   await prisma.semester.delete({ where: { id: semesterId } })
-  revalidateTag(TAGS.semesters(auth.userId), { expire: 0 })
-  revalidateTag(TAGS.courses(auth.userId), { expire: 0 })
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }

@@ -2,7 +2,8 @@ import { headers } from 'next/headers'
 import { getTimelineEvents } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { formatEvent, formatMonthHeading, formatTz, monthKeyFor } from '@/lib/dates'
+import { getRequestTimezone } from '@/lib/dates.server'
 import { TimelineScroller } from './TimelineScroller'
 
 const TYPE_COLORS: Record<string, string> = {
@@ -27,6 +28,7 @@ export default async function TimelinePage() {
   const userId = (await headers()).get('x-user-id')
   if (!userId) redirect('/login')
 
+  const timeZone = await getRequestTimezone()
   const now = new Date()
 
   const events = await getTimelineEvents(userId, 500)
@@ -34,14 +36,14 @@ export default async function TimelinePage() {
   // Group by month
   const groups: Record<string, typeof events> = {}
   for (const ev of events) {
-    const key = format(ev.startAt, 'yyyy-MM')
+    const key = monthKeyFor(ev.startAt, timeZone, ev.isAllDay)
     if (!groups[key]) groups[key] = []
     groups[key].push(ev)
   }
 
   const monthKeys = Object.keys(groups).sort()
 
-  const currentMonthKey = format(now, 'yyyy-MM')
+  const currentMonthKey = formatTz(now, 'yyyy-MM', timeZone)
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
@@ -58,7 +60,6 @@ export default async function TimelinePage() {
           <div className="space-y-0">
             {monthKeys.map(monthKey => {
               const monthEvents = groups[monthKey]
-              const monthDate = new Date(monthKey + '-01')
 
               return (
                 <div key={monthKey} id={monthKey} className="mb-8">
@@ -66,10 +67,10 @@ export default async function TimelinePage() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-28 text-right">
                       <span className="text-sm font-bold text-gray-800">
-                        {format(monthDate, 'MMMM')}
+                        {formatMonthHeading(monthKey, 'MMMM')}
                       </span>
                       <span className="block text-xs text-slate-400">
-                        {format(monthDate, 'yyyy')}
+                        {formatMonthHeading(monthKey, 'yyyy')}
                       </span>
                     </div>
                     <div className="h-3 w-3 rounded-full bg-gray-800 border-2 border-white ring-2 ring-gray-200 z-10" />
@@ -81,11 +82,11 @@ export default async function TimelinePage() {
                       <div key={ev.id} className={`flex items-start gap-4 ${ev.startAt < now ? 'opacity-50' : ''}`}>
                         <div className="w-28 text-right flex-shrink-0 pt-1">
                           <span className="text-xs text-slate-500">
-                            {format(ev.startAt, 'd MMM')}
+                            {formatEvent(ev.startAt, 'd MMM', timeZone, ev.isAllDay)}
                           </span>
                           {!ev.isAllDay && (
                             <span className="block text-xs text-slate-400">
-                              {format(ev.startAt, 'HH:mm')}
+                              {formatEvent(ev.startAt, 'HH:mm', timeZone)}
                             </span>
                           )}
                         </div>

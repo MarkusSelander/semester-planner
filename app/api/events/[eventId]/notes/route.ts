@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const Schema = z.object({ notes: z.string().nullable() })
@@ -21,5 +22,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
     where: { id: eventId },
     data: { notes: parsed.data.notes },
   })
+  invalidateUserCache(auth.userId, ['events'])
   return ok(updated)
 }

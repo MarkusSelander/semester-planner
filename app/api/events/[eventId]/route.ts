@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
 import { createRemindersForEvent, deleteRemindersForEvent } from '@/lib/reminders'
-import { TAGS, getEvent } from '@/lib/queries'
+import { getEvent } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const UpdateSchema = z.object({
@@ -66,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ even
     await createRemindersForEvent(updated, user?.emailReminders ?? true)
   }
 
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['events'])
   return ok(updated)
 }
 
@@ -79,6 +79,6 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ eve
   if (!existing) return err('Not found', 404)
 
   await prisma.event.delete({ where: { id: eventId } })
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }

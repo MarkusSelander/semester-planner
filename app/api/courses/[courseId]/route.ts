@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { TAGS } from '@/lib/queries'
+import { getCourseMeta } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const UpdateSchema = z.object({
@@ -16,14 +16,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ course
   if ('error' in auth) return auth.error
   const { courseId } = await params
 
-  const course = await prisma.course.findFirst({
-    where: { id: courseId, userId: auth.userId },
-    include: {
-      semester: true,
-      events: { orderBy: { startAt: 'asc' } },
-      _count: { select: { events: true } },
-    },
-  })
+  const course = await getCourseMeta(auth.userId, courseId)
   if (!course) return err('Not found', 404)
   return ok(course)
 }
@@ -41,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ cour
   if (!existing) return err('Not found', 404)
 
   const updated = await prisma.course.update({ where: { id: courseId }, data: parsed.data })
-  revalidateTag(TAGS.courses(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['courses'])
   return ok(updated)
 }
 
@@ -54,8 +47,6 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ cou
   if (!existing) return err('Not found', 404)
 
   await prisma.course.delete({ where: { id: courseId } })
-  revalidateTag(TAGS.courses(auth.userId), { expire: 0 })
-  revalidateTag(TAGS.semesters(auth.userId), { expire: 0 })
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }

@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { unstable_cache, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { TAGS } from '@/lib/queries'
+import { TAGS, cachedQuery, invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 type RawSemesterRow = {
@@ -30,7 +29,10 @@ export async function GET() {
   if ('error' in auth) return auth.error
 
   const cacheKey = `api:semesters:${auth.userId}`
-  const fetchSemesters = unstable_cache(
+  const fetchSemesters = () => cachedQuery(
+    [cacheKey],
+    [TAGS.semesters(auth.userId)],
+    30,
     async () => {
       const rows = await prisma.$queryRaw<RawSemesterRow[]>`
         SELECT
@@ -71,9 +73,7 @@ export async function GET() {
           events: Number(row.events_count),
         },
       }))
-    },
-    [cacheKey],
-    { tags: [TAGS.semesters(auth.userId)], revalidate: 30 }
+    }
   )
 
   const semesters = await fetchSemesters()
@@ -99,6 +99,6 @@ export async function POST(req: NextRequest) {
       isActive: isActive ?? true,
     },
   })
-  revalidateTag(TAGS.semesters(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['semesters'])
   return ok(semester, 201)
 }

@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { TAGS } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const auth = await getAuthUserId()
@@ -19,6 +18,6 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ even
       doneAt: !existing.isDone ? new Date() : null,
     },
   })
-  revalidateTag(TAGS.events(auth.userId), { expire: 0 })
+  invalidateUserCache(auth.userId, ['events'])
   return ok(updated)
 }

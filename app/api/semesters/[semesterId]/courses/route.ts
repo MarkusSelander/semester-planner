@@ -1,16 +1,12 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getAuthUserId, ok, err } from '@/lib/api'
+import { getAuthUserId, ok } from '@/lib/api'
+import { getCourses } from '@/lib/queries'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ semesterId: string }> }) {
   const auth = await getAuthUserId()
   if ('error' in auth) return auth.error
   const { semesterId } = await params
 
-  const courses = await prisma.course.findMany({
-    where: { semesterId, userId: auth.userId },
-    include: { _count: { select: { events: true } } },
-    orderBy: { name: 'asc' },
-  })
+  const courses = await getCourses(auth.userId, semesterId)
   return ok(courses)
 }

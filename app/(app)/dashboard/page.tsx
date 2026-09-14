@@ -4,7 +4,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Calendar, Plus, Upload, ArrowRight, Sparkles, Clock3, AlertTriangle, Flag } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
-import { format, isToday, isTomorrow, differenceInDays } from 'date-fns'
+import {
+  dateLabel,
+  differenceInDaysTz,
+  formatDateOnly,
+  formatEvent,
+  formatTz,
+  isTodayTz,
+} from '@/lib/dates'
+import { getRequestTimezone } from '@/lib/dates.server'
 
 export default async function DashboardPage() {
   const hdrs = await headers()
@@ -17,6 +25,8 @@ export default async function DashboardPage() {
     getUpcomingEvents(user.id),
   ])
 
+  const timeZone = await getRequestTimezone()
+
   const TYPE_STYLES: Record<string, { badge: string; bar: string }> = {
     EXAM:       { badge: 'bg-red-50 text-red-700 ring-1 ring-red-200', bar: 'bg-red-500' },
     ASSIGNMENT: { badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', bar: 'bg-amber-500' },
@@ -26,28 +36,24 @@ export default async function DashboardPage() {
     OTHER:      { badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200', bar: 'bg-slate-400' },
   }
 
-  function dateLabel(date: Date) {
-    if (isToday(date)) return 'Today'
-    if (isTomorrow(date)) return 'Tomorrow'
-    const days = differenceInDays(date, new Date())
-    if (days <= 7) return format(date, 'EEEE')
-    return format(date, 'd MMM')
+  function eventDateLabel(date: Date, isAllDay?: boolean) {
+    return dateLabel(date, timeZone, isAllDay)
   }
 
   const firstName = user.user_metadata?.full_name?.split(' ')[0] ?? 'there'
-  const hour = new Date().getHours()
+  const hour = Number(formatTz(new Date(), 'H', timeZone))
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   const nextEvent = upcomingEvents[0] ?? null
-  const todayEvents = upcomingEvents.filter(e => isToday(e.startAt))
-  const thisWeekEvents = upcomingEvents.filter(e => differenceInDays(e.startAt, new Date()) <= 7)
+  const todayEvents = upcomingEvents.filter(e => isTodayTz(e.startAt, timeZone))
+  const thisWeekEvents = upcomingEvents.filter(e => differenceInDaysTz(e.startAt, timeZone) <= 7)
   const priorityQueue = upcomingEvents.filter(e => e.type === 'EXAM' || e.type === 'ASSIGNMENT' || e.type === 'PROJECT')
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-slate-400 mb-1 font-medium">{format(new Date(), 'EEEE, d MMMM yyyy')}</p>
+          <p className="text-xs text-slate-400 mb-1 font-medium">{formatTz(new Date(), 'EEEE, d MMMM yyyy', timeZone)}</p>
           <h1 className="text-3xl font-bold text-slate-900">{greeting}, {firstName}</h1>
           <p className="text-sm text-slate-500 mt-1">Plan your week by priority and due date.</p>
         </div>
@@ -88,7 +94,7 @@ export default async function DashboardPage() {
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[nextEvent.type]?.badge ?? ''}`}>{nextEvent.type}</span>
                       <span className="text-xs text-slate-500">{nextEvent.course.code ?? nextEvent.course.name}</span>
-                      <span className="text-xs text-slate-400">{format(nextEvent.startAt, 'd MMM · HH:mm')}</span>
+                      <span className="text-xs text-slate-400">{nextEvent.isAllDay ? formatEvent(nextEvent.startAt, 'd MMM', timeZone, true) : formatEvent(nextEvent.startAt, 'd MMM · HH:mm', timeZone)}</span>
                     </div>
                   </div>
                 </div>
@@ -118,8 +124,8 @@ export default async function DashboardPage() {
                         <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{event.course.code ?? event.course.name}</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-slate-500">{dateLabel(event.startAt)}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-500">{eventDateLabel(event.startAt, event.isAllDay)}</span>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${styles.badge}`}>{event.type}</span>
                       </div>
                     </Link>
@@ -143,7 +149,7 @@ export default async function DashboardPage() {
                 {todayEvents.map(event => (
                   <Link key={event.id} href={`/events/${event.id}`} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
                     <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{format(event.startAt, 'HH:mm')} · {event.course.code ?? event.course.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{event.isAllDay ? 'All day' : formatEvent(event.startAt, 'HH:mm', timeZone)} · {event.course.code ?? event.course.name}</p>
                   </Link>
                 ))}
               </div>
@@ -162,7 +168,7 @@ export default async function DashboardPage() {
                 {priorityQueue.slice(0, 6).map(event => (
                   <Link key={event.id} href={`/events/${event.id}`} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
                     <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{dateLabel(event.startAt)} · {event.type}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{eventDateLabel(event.startAt, event.isAllDay)} · {event.type}</p>
                   </Link>
                 ))}
               </div>
@@ -184,7 +190,7 @@ export default async function DashboardPage() {
                 semesters.map(semester => (
                   <Link key={semester.id} href={`/semesters/${semester.id}`} className="block rounded-lg px-3 py-2.5 hover:bg-slate-50 transition-colors">
                     <p className="text-sm font-medium text-slate-900 truncate">{semester.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{format(semester.startDate, 'd MMM')} - {format(semester.endDate, 'd MMM yyyy')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{formatDateOnly(semester.startDate, 'd MMM')} - {formatDateOnly(semester.endDate, 'd MMM yyyy')}</p>
                     {semester.courses.length > 0 && (
                       <div className="flex gap-1 mt-2">
                         {semester.courses.slice(0, 6).map((c: { id: string; color: string }) => (
@@ -198,7 +204,7 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 p-5 text-white shadow-sm">
+          <section className="rounded-2xl bg-linear-to-br from-indigo-600 to-indigo-700 p-5 text-white shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-3.5 w-3.5 text-indigo-300" />
               <p className="text-[11px] font-semibold text-indigo-300 uppercase tracking-wider">AI Import</p>

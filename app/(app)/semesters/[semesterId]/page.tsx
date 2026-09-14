@@ -1,34 +1,21 @@
 import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { getSemester } from '@/lib/queries'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Upload, Edit, CalendarArrowDown } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CourseBadge } from '@/components/shared/CourseBadge'
-import { format } from 'date-fns'
+import { formatDateOnly, formatEvent } from '@/lib/dates'
+import { getRequestTimezone } from '@/lib/dates.server'
 
 export default async function SemesterDetailPage({ params }: { params: Promise<{ semesterId: string }> }) {
   const { semesterId } = await params
   const userId = (await headers()).get('x-user-id')
   if (!userId) redirect('/login')
+  const timeZone = await getRequestTimezone()
 
-  const semester = await prisma.semester.findFirst({
-    where: { id: semesterId, userId },
-    include: {
-      courses: {
-        include: { _count: { select: { events: true } } },
-        orderBy: { name: 'asc' },
-      },
-      events: {
-        where: { isDone: false, startAt: { gte: new Date() } },
-        include: { course: { select: { name: true, code: true, color: true } } },
-        orderBy: { startAt: 'asc' },
-        take: 10,
-      },
-      _count: { select: { events: true } },
-    },
-  })
+  const semester = await getSemester(userId, semesterId)
   if (!semester) notFound()
 
   return (
@@ -41,7 +28,7 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{semester.name}</h1>
           <p className="text-sm text-slate-500 mt-1 tabular-nums">
-            {format(semester.startDate, 'd MMM yyyy')} – {format(semester.endDate, 'd MMM yyyy')}
+            {formatDateOnly(semester.startDate, 'd MMM yyyy')} – {formatDateOnly(semester.endDate, 'd MMM yyyy')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -116,7 +103,7 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
                     <div className="h-2 w-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: event.course.color }} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{event.title}</p>
-                      <p className="text-xs text-gray-500">{format(event.startAt, 'd MMM · HH:mm')}</p>
+                      <p className="text-xs text-gray-500">{event.isAllDay ? formatEvent(event.startAt, 'd MMM', timeZone, true) : formatEvent(event.startAt, 'd MMM · HH:mm', timeZone)}</p>
                     </div>
                   </Link>
                 ))}

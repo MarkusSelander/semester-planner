@@ -1,14 +1,33 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Copy, RefreshCw } from 'lucide-react'
+import { getBrowserTimezone, setTimezoneCookies } from '@/lib/dates'
+
+const TIMEZONES = [
+  'Europe/Oslo',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Australia/Sydney',
+  'UTC',
+]
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [timezone, setTimezone] = useState('Europe/Oslo')
+  const [deviceTimezone, setDeviceTimezone] = useState('Europe/Oslo')
   const [emailReminders, setEmailReminders] = useState(true)
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -16,13 +35,15 @@ export default function SettingsPage() {
   const [regenerating, setRegenerating] = useState(false)
 
   useEffect(() => {
+    const detected = getBrowserTimezone()
+    setDeviceTimezone(detected)
     Promise.all([
       fetch('/api/user/profile').then(r => r.json()),
       fetch('/api/user/calendar-token').then(r => r.json()),
     ]).then(([profile, cal]) => {
       if (profile.data) {
         setFullName(profile.data.fullName ?? '')
-        setTimezone(profile.data.timezone ?? 'Europe/Oslo')
+        setTimezone(profile.data.timezone ?? detected)
         setEmailReminders(profile.data.emailReminders ?? true)
       }
       if (cal.data) setCalendarToken(cal.data.calendarToken)
@@ -68,7 +89,9 @@ export default function SettingsPage() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
+      setTimezoneCookies(timezone, timezone !== deviceTimezone)
       toast.success('Settings saved!')
+      router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save settings')
     } finally {
@@ -101,19 +124,30 @@ export default function SettingsPage() {
                 onChange={e => setTimezone(e.target.value)}
                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
               >
-                <option value="Europe/Oslo">Europe/Oslo</option>
-                <option value="Europe/London">Europe/London</option>
-                <option value="Europe/Paris">Europe/Paris</option>
-                <option value="Europe/Berlin">Europe/Berlin</option>
-                <option value="America/New_York">America/New_York</option>
-                <option value="America/Chicago">America/Chicago</option>
-                <option value="America/Denver">America/Denver</option>
-                <option value="America/Los_Angeles">America/Los_Angeles</option>
-                <option value="Asia/Tokyo">Asia/Tokyo</option>
-                <option value="Asia/Shanghai">Asia/Shanghai</option>
-                <option value="Australia/Sydney">Australia/Sydney</option>
-                <option value="UTC">UTC</option>
+                {!TIMEZONES.includes(deviceTimezone) && (
+                  <option value={deviceTimezone}>{deviceTimezone} (this device)</option>
+                )}
+                {TIMEZONES.map(zone => (
+                  <option key={zone} value={zone}>
+                    {zone}{zone === deviceTimezone ? ' (this device)' : ''}
+                  </option>
+                ))}
+                {timezone && !TIMEZONES.includes(timezone) && timezone !== deviceTimezone && (
+                  <option value={timezone}>{timezone}</option>
+                )}
               </select>
+              <p className="mt-1.5 text-xs text-gray-500">
+                Dates and times follow this timezone. It defaults to the timezone of the device you are using.
+              </p>
+              {timezone !== deviceTimezone && (
+                <button
+                  type="button"
+                  onClick={() => setTimezone(deviceTimezone)}
+                  className="mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  Use this device ({deviceTimezone})
+                </button>
+              )}
             </div>
           </div>
         </div>

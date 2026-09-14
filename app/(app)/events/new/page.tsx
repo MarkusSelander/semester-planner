@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { allDayToISO, getBrowserTimezone, zonedDateTimeToISO } from '@/lib/dates'
 
 const EVENT_TYPES = ['LECTURE', 'EXERCISE', 'ASSIGNMENT', 'EXAM', 'PROJECT', 'OTHER'] as const
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
@@ -56,11 +57,12 @@ export default function NewEventPage() {
     if (!courseId) { toast.error('Select a course'); return }
     if (!startDate) { toast.error('Set a start date'); return }
 
+    const timeZone = getBrowserTimezone()
     const startAt = isAllDay
-      ? `${startDate}T00:00:00+00:00`
-      : `${startDate}T${startTime}:00+00:00`
+      ? allDayToISO(startDate)
+      : zonedDateTimeToISO(startDate, startTime, timeZone)
     const endAt = !isAllDay && endTime
-      ? `${startDate}T${endTime}:00+00:00`
+      ? zonedDateTimeToISO(startDate, endTime, timeZone)
       : undefined
 
     setLoading(true)

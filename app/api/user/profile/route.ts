@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
+import { getUserProfile } from '@/lib/queries'
+import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
 const UpdateSchema = z.object({
@@ -13,7 +15,7 @@ export async function GET() {
   const auth = await getAuthUserId()
   if ('error' in auth) return auth.error
 
-  const user = await prisma.user.findUnique({ where: { id: auth.userId } })
+  const user = await getUserProfile(auth.userId)
   if (!user) return err('User not found', 404)
   return ok(user)
 }
@@ -31,5 +33,6 @@ export async function PUT(req: NextRequest) {
     update: parsed.data,
     create: { id: auth.userId, email: '', ...parsed.data },
   })
+  invalidateUserCache(auth.userId, ['user'])
   return ok(user)
 }
