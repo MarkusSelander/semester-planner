@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { Copy, RefreshCw } from 'lucide-react'
 import { getBrowserTimezone, setTimezoneCookies } from '@/lib/dates'
 import { FormPageSkeleton } from '@/components/shared/FormPageSkeleton'
-import { labelClassName, selectClassName } from '@/lib/utils'
+import { labelClassName, selectFullClassName } from '@/lib/utils'
 
 const TIMEZONES = [
   'Europe/Oslo',
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                 id="timezone"
                 value={timezone}
                 onChange={e => setTimezone(e.target.value)}
-                className={selectClassName}
+                className={selectFullClassName}
               >
                 {!TIMEZONES.includes(deviceTimezone) && (
                   <option value={deviceTimezone}>{deviceTimezone} (this device)</option>

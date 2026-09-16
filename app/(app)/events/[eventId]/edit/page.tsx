@@ -15,7 +15,7 @@ import {
   zonedDateTimeToISO,
 } from '@/lib/dates'
 import { EVENT_TYPES, PRIORITIES, eventTypeLabel, priorityLabel } from '@/lib/event-display'
-import { labelClassName, selectClassName, textareaClassName } from '@/lib/utils'
+import { labelClassName, selectFullClassName, textareaClassName } from '@/lib/utils'
 
 export default function EditEventPage() {
   const params = useParams()
@@ -118,7 +118,7 @@ export default function EditEventPage() {
               id="type"
               value={type}
               onChange={e => setType(e.target.value)}
-              className={selectClassName}
+              className={selectFullClassName}
             >
               {EVENT_TYPES.map(t => <option key={t} value={t}>{eventTypeLabel(t)}</option>)}
             </select>
@@ -129,7 +129,7 @@ export default function EditEventPage() {
               id="priority"
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className={selectClassName}
+              className={selectFullClassName}
             >
               {PRIORITIES.map(p => <option key={p} value={p}>{priorityLabel(p)}</option>)}
             </select>

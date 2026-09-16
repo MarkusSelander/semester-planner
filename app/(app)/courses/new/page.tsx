@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { BackLink } from '@/components/shared/BackLink'
-import { labelClassName, selectClassName } from '@/lib/utils'
+import { labelClassName, selectFullClassName } from '@/lib/utils'
 
 const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
 
@@ -56,7 +56,7 @@ export default function NewCoursePage() {
             id="semesterId"
             value={semesterId}
             onChange={e => setSemesterId(e.target.value)}
-            className={selectClassName}
+            className={selectFullClassName}
             required
           >
             <option value="">Select semester...</option>
