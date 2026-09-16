@@ -2,33 +2,18 @@ import { headers } from 'next/headers'
 import { getCourse } from '@/lib/queries'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit, CalendarDays, CheckCircle2, Clock3 } from 'lucide-react'
+import { Edit, CalendarDays, Clock3 } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
-import { isBefore } from 'date-fns'
 import {
   dateLabel,
   formatEvent,
   formatMonthHeading,
-  isTodayTz,
   monthKeyFor,
 } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
-
-const typeColors: Record<string, string> = {
-  EXAM: 'bg-red-100 text-red-700',
-  ASSIGNMENT: 'bg-orange-100 text-orange-700',
-  PROJECT: 'bg-purple-100 text-purple-700',
-  EXERCISE: 'bg-blue-100 text-blue-700',
-  LECTURE: 'bg-gray-100 text-gray-700',
-  OTHER: 'bg-gray-100 text-gray-600',
-}
-
-function eventStatus(event: { isDone: boolean; startAt: Date }, timeZone: string) {
-  if (event.isDone) return { label: 'Done', cls: 'bg-emerald-100 text-emerald-700' }
-  if (isTodayTz(event.startAt, timeZone)) return { label: 'Today', cls: 'bg-blue-100 text-blue-700' }
-  if (isBefore(event.startAt, new Date())) return { label: 'Overdue', cls: 'bg-red-100 text-red-700' }
-  return { label: 'Upcoming', cls: 'bg-slate-100 text-slate-700' }
-}
+import { eventStatus, eventTypeLabel, eventTypeStyle } from '@/lib/event-display'
+import { BackLink } from '@/components/shared/BackLink'
+import { EmptyState } from '@/components/shared/EmptyState'
 
 export default async function CourseDetailPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = await params
@@ -54,9 +39,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      <Link href="/courses" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
-        <ArrowLeft className="h-4 w-4" /> All courses
-      </Link>
+      <BackLink href="/courses">All courses</BackLink>
 
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -157,7 +140,16 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
         </div>
 
         {course.events.length === 0 ? (
-          <p className="text-sm text-gray-400 py-10 text-center">No events for this course yet</p>
+          <div className="p-6">
+            <EmptyState
+              icon={CalendarDays}
+              title="No events for this course yet"
+              description="Add lectures, assignments, and exams to see them on this timeline."
+              actionLabel="Add event"
+              actionHref={`/events/new?courseId=${courseId}&semesterId=${course.semester.id}`}
+              compact
+            />
+          </div>
         ) : (
           <div className="p-3 md:p-4 space-y-6">
             {monthKeys.map(monthKey => {
@@ -185,10 +177,10 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                               <p className={`text-sm font-medium ${event.isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
                                 {event.title}
                               </p>
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${typeColors[event.type] ?? ''}`}>
-                                {event.type}
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${eventTypeStyle(event.type).badge}`}>
+                                {eventTypeLabel(event.type)}
                               </span>
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${status.cls}`}>
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${status.cls}`}>
                                 {status.label}
                               </span>
                             </div>
@@ -199,12 +191,6 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                                   ? formatEvent(event.startAt, 'd MMM yyyy', timeZone, true)
                                   : formatEvent(event.startAt, 'd MMM yyyy · HH:mm', timeZone)}
                               </span>
-                              {event.isDone && (
-                                <span className="inline-flex items-center gap-1 text-emerald-600">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Done
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>

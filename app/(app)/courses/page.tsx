@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, BookOpen, ChevronRight } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/EmptyState'
 
 export default async function CoursesPage() {
   const hdrs = await headers()
@@ -22,7 +23,7 @@ export default async function CoursesPage() {
   const semesterGroups = Object.values(bySemester)
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
@@ -35,14 +36,13 @@ export default async function CoursesPage() {
       </div>
 
       {courses.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="h-6 w-6 text-slate-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-700 mb-1">No courses yet</p>
-          <p className="text-xs text-slate-400 mb-4">Add your first course to start organizing events.</p>
-          <ButtonLink href="/courses/new">Add course</ButtonLink>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="No courses yet"
+          description="Add your first course to start organizing events."
+          actionLabel="Add course"
+          actionHref="/courses/new"
+        />
       ) : (
         <div className="space-y-6">
           {semesterGroups.map(({ semesterName, courses: semCourses }) => (

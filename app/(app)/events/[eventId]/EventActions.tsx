@@ -57,13 +57,14 @@ export function EventActions({ eventId, isDone }: { eventId: string; isDone: boo
           : <Circle className="h-4 w-4 mr-1" />}
         {done ? 'Done' : 'Mark done'}
       </Button>
-      <ButtonLink href={`/events/${eventId}/edit`} variant="outline" size="sm">
+      <ButtonLink href={`/events/${eventId}/edit`} variant="outline" size="sm" aria-label="Edit event">
         <Edit className="h-4 w-4" />
       </ButtonLink>
       <Button
         variant="outline"
         size="sm"
         onClick={() => setShowDelete(true)}
+        aria-label="Delete event"
         className="text-red-500 hover:text-red-600 hover:border-red-300"
       >
         <Trash2 className="h-4 w-4" />

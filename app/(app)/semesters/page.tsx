@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, GraduationCap, Upload, ChevronRight } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDateOnly } from '@/lib/dates'
 
 export default async function SemestersPage() {
@@ -14,7 +15,7 @@ export default async function SemestersPage() {
   const semesters = await getSemesters(userId)
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Semesters</h1>
@@ -27,14 +28,13 @@ export default async function SemestersPage() {
       </div>
 
       {semesters.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <GraduationCap className="h-6 w-6 text-slate-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-700 mb-1">No semesters yet</p>
-          <p className="text-xs text-slate-400 mb-4">Create your first semester to start organizing your schedule.</p>
-          <ButtonLink href="/semesters/new">Create semester</ButtonLink>
-        </div>
+        <EmptyState
+          icon={GraduationCap}
+          title="No semesters yet"
+          description="Create your first semester to start organizing your schedule."
+          actionLabel="Create semester"
+          actionHref="/semesters/new"
+        />
       ) : (
         <div className="space-y-3">
           {semesters.map(semester => (
@@ -60,8 +60,8 @@ export default async function SemestersPage() {
                     </div>
                     {semester.courses.length > 0 && (
                       <div className="flex gap-1.5 mt-3">
-                        {semester.courses.map((c: { id: string; color: string }, i: number) => (
-                          <span key={i} className="h-2 w-8 rounded-full" style={{ backgroundColor: c.color }} />
+                        {semester.courses.map((c: { id: string; color: string }) => (
+                          <span key={c.id} className="h-2 w-8 rounded-full" style={{ backgroundColor: c.color }} />
                         ))}
                       </div>
                     )}
