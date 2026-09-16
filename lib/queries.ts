@@ -278,6 +278,47 @@ export const getUpcomingEvents = cache((userId: string) =>
   )
 )
 
+export type OverdueEvent = {
+  id: string
+  title: string
+  type: string
+  startAt: Date
+  isAllDay: boolean
+  course: { name: string; code: string | null; color: string }
+}
+
+// Events that started before now but were never checked off — the things a
+// student may have forgotten to complete or hand in.
+export const getOverdueEvents = cache((userId: string): Promise<OverdueEvent[]> =>
+  cachedQuery(
+    [`events:overdue:${userId}`],
+    [TAGS.events(userId)],
+    30,
+    () =>
+      timed('getOverdueEvents', () =>
+        prisma.event.findMany({
+          where: { userId, isDone: false, startAt: { lt: new Date() } },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            startAt: true,
+            isAllDay: true,
+            course: { select: { name: true, code: true, color: true } },
+          },
+          orderBy: { startAt: 'desc' },
+          take: 50,
+        })
+      )
+  ).then(events =>
+    events.map(event => ({
+      ...event,
+      type: String(event.type),
+      startAt: toDate(event.startAt),
+    }))
+  )
+)
+
 export const getEvent = cache((userId: string, eventId: string) =>
   cachedQuery(
     [`event:${userId}:${eventId}`],

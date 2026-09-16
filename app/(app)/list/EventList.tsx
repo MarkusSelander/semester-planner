@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Circle, CalendarArrowDown } from 'lucide-react'
+import { Plus, CheckCircle2, Circle, CalendarArrowDown, AlertTriangle } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
 import { isBefore } from 'date-fns'
 import { toast } from 'sonner'
@@ -46,6 +46,7 @@ export function EventList({
   typeFilter,
   doneFilter,
   view,
+  overdueOnly = false,
 }: {
   initialEvents: ListEvent[]
   semesters: Semester[]
@@ -53,21 +54,26 @@ export function EventList({
   typeFilter: string
   doneFilter: string
   view: View
+  overdueOnly?: boolean
 }) {
   const router = useRouter()
   const [events, setEvents] = useState<ListEvent[]>(initialEvents)
   const timeZone = getBrowserTimezone()
 
   const { grouped, dateKeys } = useMemo(() => {
+    const now = new Date()
+    const visible = overdueOnly
+      ? events.filter(ev => !ev.isDone && isBefore(new Date(ev.startAt), now))
+      : events
     const groups: Record<string, ListEvent[]> = {}
-    for (const ev of events) {
+    for (const ev of visible) {
       const key = calendarDayKey(ev.startAt, timeZone, ev.isAllDay)
       if (!groups[key]) groups[key] = []
       groups[key].push(ev)
     }
     const keys = Object.keys(groups).sort()
     return { grouped: groups, dateKeys: keys }
-  }, [events, timeZone])
+  }, [events, timeZone, overdueOnly])
 
   function buildParams(overrides: Record<string, string>) {
     const sp = new URLSearchParams()
@@ -122,6 +128,21 @@ export function EventList({
         </div>
       </div>
 
+      {overdueOnly && (
+        <div className="mb-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-800">Overdue &amp; unfinished</p>
+            <p className="text-xs text-amber-700">
+              These started before now and aren&apos;t checked off yet. Mark them done or reschedule them.
+            </p>
+          </div>
+          <ButtonLink href="/list" variant="outline" size="sm" className="ml-auto flex-shrink-0">
+            Show all
+          </ButtonLink>
+        </div>
+      )}
+
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit mb-5">
         {TABS.map(tab => (
@@ -174,8 +195,10 @@ export function EventList({
         </select>
       </div>
 
-      {events.length === 0 ? (
-        <div className="text-sm text-slate-400 py-16 text-center">No events found</div>
+      {dateKeys.length === 0 ? (
+        <div className="text-sm text-slate-400 py-16 text-center">
+          {overdueOnly ? 'Nothing overdue — you\u2019re all caught up.' : 'No events found'}
+        </div>
       ) : (
         <div className="space-y-6">
           {dateKeys.map(key => (
