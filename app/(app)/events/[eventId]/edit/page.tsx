@@ -5,8 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { BackLink } from '@/components/shared/BackLink'
+import { FormPageSkeleton } from '@/components/shared/FormPageSkeleton'
 import {
   allDayToISO,
   getBrowserTimezone,
@@ -14,9 +14,8 @@ import {
   toTimeInputValue,
   zonedDateTimeToISO,
 } from '@/lib/dates'
-
-const EVENT_TYPES = ['LECTURE', 'EXERCISE', 'ASSIGNMENT', 'EXAM', 'PROJECT', 'OTHER'] as const
-const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
+import { EVENT_TYPES, PRIORITIES, eventTypeLabel, priorityLabel } from '@/lib/event-display'
+import { labelClassName, selectClassName, textareaClassName } from '@/lib/utils'
 
 export default function EditEventPage() {
   const params = useParams()
@@ -99,47 +98,47 @@ export default function EditEventPage() {
     }
   }
 
-  if (fetching) return <div className="p-8 text-sm text-gray-400">Loading...</div>
+  if (fetching) return <FormPageSkeleton />
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/events/${eventId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Event</h1>
+    <div className="p-6 md:p-8 max-w-lg mx-auto">
+      <BackLink href="/list">All events</BackLink>
+      <h1 className="text-2xl font-bold text-slate-900 mt-6 mb-6">Edit Event</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <Input value={title} onChange={e => setTitle(e.target.value)} required />
+          <label htmlFor="title" className={labelClassName}>Title</label>
+          <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label htmlFor="type" className={labelClassName}>Type</label>
             <select
+              id="type"
               value={type}
               onChange={e => setType(e.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              className={selectClassName}
             >
-              {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {EVENT_TYPES.map(t => <option key={t} value={t}>{eventTypeLabel(t)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <label htmlFor="priority" className={labelClassName}>Priority</label>
             <select
+              id="priority"
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              className={selectClassName}
             >
-              {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+              {PRIORITIES.map(p => <option key={p} value={p}>{priorityLabel(p)}</option>)}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+          <label htmlFor="startDate" className={labelClassName}>Date</label>
+          <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
         </div>
 
         <div className="flex items-center gap-2">
@@ -150,49 +149,51 @@ export default function EditEventPage() {
             onChange={e => setIsAllDay(e.target.checked)}
             className="rounded"
           />
-          <label htmlFor="allDay" className="text-sm text-gray-700">All day</label>
+          <label htmlFor="allDay" className="text-sm text-slate-700">All day</label>
         </div>
 
         {!isAllDay && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start time</label>
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+              <label htmlFor="startTime" className={labelClassName}>Start time</label>
+              <Input id="startTime" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End time (optional)</label>
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+              <label htmlFor="endTime" className={labelClassName}>End time (optional)</label>
+              <Input id="endTime" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="description" className={labelClassName}>Description</label>
           <textarea
+            id="description"
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={textareaClassName}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-          <Input value={location} onChange={e => setLocation(e.target.value)} />
+          <label htmlFor="location" className={labelClassName}>Location</label>
+          <Input id="location" value={location} onChange={e => setLocation(e.target.value)} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-          <Input value={url} onChange={e => setUrl(e.target.value)} type="url" />
+          <label htmlFor="url" className={labelClassName}>URL</label>
+          <Input id="url" value={url} onChange={e => setUrl(e.target.value)} type="url" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className={labelClassName}>Notes</label>
           <textarea
+            id="notes"
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={textareaClassName}
           />
         </div>
 

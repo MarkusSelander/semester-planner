@@ -5,9 +5,11 @@ import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { BackLink } from '@/components/shared/BackLink'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { FormPageSkeleton } from '@/components/shared/FormPageSkeleton'
+import { labelClassName } from '@/lib/utils'
 
 const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
 
@@ -70,33 +72,33 @@ export default function EditCoursePage() {
     }
   }
 
-  if (fetching) return <div className="p-8 text-sm text-gray-400">Loading...</div>
+  if (fetching) return <FormPageSkeleton />
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/courses/${courseId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Course</h1>
+    <div className="p-6 md:p-8 max-w-lg mx-auto">
+      <BackLink href="/courses">All courses</BackLink>
+      <h1 className="text-2xl font-bold text-slate-900 mt-6 mb-6">Edit Course</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course name</label>
-          <Input value={name} onChange={e => setName(e.target.value)} required />
+          <label htmlFor="name" className={labelClassName}>Course name</label>
+          <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course code (optional)</label>
-          <Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. TDT4120" />
+          <label htmlFor="code" className={labelClassName}>Course code (optional)</label>
+          <Input id="code" value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. TDT4120" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
-          <div className="flex gap-2">
+          <p id="color-label" className={labelClassName}>Color</p>
+          <div className="flex gap-2" role="group" aria-labelledby="color-label">
             {COLORS.map(c => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                aria-label={`Select color ${c}`}
+                aria-pressed={color === c}
+                className={`h-7 w-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : ''}`}
                 style={{ backgroundColor: c }}
               />
             ))}

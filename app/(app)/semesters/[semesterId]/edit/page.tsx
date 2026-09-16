@@ -5,9 +5,11 @@ import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { BackLink } from '@/components/shared/BackLink'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { FormPageSkeleton } from '@/components/shared/FormPageSkeleton'
+import { labelClassName } from '@/lib/utils'
 
 export default function EditSemesterPage() {
   const params = useParams()
@@ -68,26 +70,24 @@ export default function EditSemesterPage() {
     }
   }
 
-  if (fetching) return <div className="p-8 text-sm text-gray-400">Loading...</div>
+  if (fetching) return <FormPageSkeleton />
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/semesters/${semesterId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Semester</h1>
+    <div className="p-6 md:p-8 max-w-lg mx-auto">
+      <BackLink href="/semesters">All semesters</BackLink>
+      <h1 className="text-2xl font-bold text-slate-900 mt-6 mb-6">Edit Semester</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <Input value={name} onChange={e => setName(e.target.value)} required />
+          <label htmlFor="name" className={labelClassName}>Name</label>
+          <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+          <label htmlFor="startDate" className={labelClassName}>Start date</label>
+          <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+          <label htmlFor="endDate" className={labelClassName}>End date</label>
+          <Input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
         </div>
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</Button>
