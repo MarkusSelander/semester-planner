@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus, GraduationCap, Upload, ChevronRight } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { formatDateOnly } from '@/lib/dates'
 
 export default async function SemestersPage() {
   const hdrs = await headers()
