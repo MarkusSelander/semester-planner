@@ -5,24 +5,7 @@ import Link from 'next/link'
 import { formatEvent, formatMonthHeading, formatTz, monthKeyFor } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
 import { TimelineScroller } from './TimelineScroller'
-
-const TYPE_COLORS: Record<string, string> = {
-  EXAM: 'bg-red-100 text-red-700 border-red-200',
-  ASSIGNMENT: 'bg-orange-100 text-orange-700 border-orange-200',
-  PROJECT: 'bg-purple-100 text-purple-700 border-purple-200',
-  EXERCISE: 'bg-blue-100 text-blue-700 border-blue-200',
-  LECTURE: 'bg-slate-100 text-slate-600 border-slate-200',
-  OTHER: 'bg-slate-100 text-slate-500 border-slate-200',
-}
-
-const TYPE_DOT: Record<string, string> = {
-  EXAM: 'bg-red-500',
-  ASSIGNMENT: 'bg-orange-400',
-  PROJECT: 'bg-purple-500',
-  EXERCISE: 'bg-blue-400',
-  LECTURE: 'bg-gray-400',
-  OTHER: 'bg-gray-300',
-}
+import { HandInTag, TypeBadge, eventTypeMeta, isActionRequired } from '@/components/event-type'
 
 export default async function TimelinePage() {
   const userId = (await headers()).get('x-user-id')
@@ -78,7 +61,10 @@ export default async function TimelinePage() {
 
                   {/* Events in this month */}
                   <div className="space-y-2">
-                    {monthEvents.map(ev => (
+                    {monthEvents.map(ev => {
+                      const emphasize = isActionRequired(ev.type)
+                      const meta = eventTypeMeta(ev.type)
+                      return (
                       <div key={ev.id} className={`flex items-start gap-4 ${ev.startAt < now ? 'opacity-50' : ''}`}>
                         <div className="w-28 text-right flex-shrink-0 pt-1">
                           <span className="text-xs text-slate-500">
@@ -91,9 +77,9 @@ export default async function TimelinePage() {
                           )}
                         </div>
 
-                        {/* Dot on the line */}
+                        {/* Dot on the line — larger for things you must hand in */}
                         <div className="flex-shrink-0 mt-1.5 z-10">
-                          <div className={`h-3 w-3 rounded-full border-2 border-white ${TYPE_DOT[ev.type] ?? 'bg-gray-300'}`} />
+                          <div className={`rounded-full border-2 border-white ${emphasize ? 'h-3.5 w-3.5 ring-2 ring-slate-200' : 'h-3 w-3'} ${meta.accent}`} />
                         </div>
 
                         {/* Event card */}
@@ -101,14 +87,13 @@ export default async function TimelinePage() {
                           href={`/events/${ev.id}`}
                           className="flex-1 min-w-0 mb-1 group"
                         >
-                          <div className="rounded-lg border border-slate-100 bg-white p-3 hover:border-gray-300 hover:shadow-sm transition-all">
+                          <div className={`rounded-lg bg-white p-3 hover:border-gray-300 hover:shadow-sm transition-all ${emphasize ? `border border-slate-200 border-l-4 ${meta.borderL}` : 'border border-slate-100'}`}>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className={`text-sm font-medium group-hover:text-blue-600 transition-colors ${ev.isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                              <p className={`text-sm group-hover:text-blue-600 transition-colors ${ev.isDone ? 'line-through text-slate-400' : emphasize ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
                                 {ev.title}
                               </p>
-                              <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${TYPE_COLORS[ev.type] ?? ''}`}>
-                                {ev.type}
-                              </span>
+                              {!ev.isDone && <HandInTag type={ev.type} />}
+                              <TypeBadge type={ev.type} />
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               <span
@@ -122,7 +107,8 @@ export default async function TimelinePage() {
                           </div>
                         </Link>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )

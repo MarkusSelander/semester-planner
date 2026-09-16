@@ -13,15 +13,7 @@ import {
   monthKeyFor,
 } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
-
-const typeColors: Record<string, string> = {
-  EXAM: 'bg-red-100 text-red-700',
-  ASSIGNMENT: 'bg-orange-100 text-orange-700',
-  PROJECT: 'bg-purple-100 text-purple-700',
-  EXERCISE: 'bg-blue-100 text-blue-700',
-  LECTURE: 'bg-gray-100 text-gray-700',
-  OTHER: 'bg-gray-100 text-gray-600',
-}
+import { HandInTag, TypeBadge, isActionRequired } from '@/components/event-type'
 
 function eventStatus(event: { isDone: boolean; startAt: Date }, timeZone: string) {
   if (event.isDone) return { label: 'Done', cls: 'bg-emerald-100 text-emerald-700' }
@@ -182,12 +174,11 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className={`text-sm font-medium ${event.isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                              <p className={`text-sm ${event.isDone ? 'line-through text-slate-400' : isActionRequired(event.type) ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
                                 {event.title}
                               </p>
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${typeColors[event.type] ?? ''}`}>
-                                {event.type}
-                              </span>
+                              {!event.isDone && <HandInTag type={event.type} />}
+                              <TypeBadge type={event.type} />
                               <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${status.cls}`}>
                                 {status.label}
                               </span>

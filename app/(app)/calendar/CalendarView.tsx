@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addDays, isSameDay, startOfDay, isBefore } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
-import { CalendarDays, Rows3 } from 'lucide-react'
+import { CalendarDays, Rows3, Upload } from 'lucide-react'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import { isActionRequired, mustHandIn } from '@/components/event-type'
 
 type CalendarEvent = {
   id: string
@@ -86,8 +87,22 @@ export function CalendarView({ initialEvents }: { initialEvents: CalendarEvent[]
       borderRadius: '6px',
       fontSize: '0.75rem',
       padding: '2px 6px',
+      // Dark inset bar on the left marks events that must be handed in.
+      boxShadow: isActionRequired(event.resource.type)
+        ? 'inset 3px 0 0 rgba(15, 23, 42, 0.55)'
+        : undefined,
+      opacity: isActionRequired(event.resource.type) ? 1 : 0.9,
     },
   })
+
+  const CalEventChip = ({ event }: { event: CalEvent }) => (
+    <span className="flex items-center gap-1 truncate">
+      {mustHandIn(event.resource.type) && (
+        <Upload className="h-3 w-3 shrink-0" strokeWidth={2.75} aria-hidden />
+      )}
+      <span className="truncate">{event.title}</span>
+    </span>
+  )
 
   const timelineDays = useMemo(() => {
     const start = startOfDay(date)
@@ -143,6 +158,7 @@ export function CalendarView({ initialEvents }: { initialEvents: CalendarEvent[]
             date={date}
             onNavigate={setDate}
             eventPropGetter={eventStyleGetter}
+            components={{ event: CalEventChip }}
             onSelectEvent={ev => router.push(`/events/${ev.id}`)}
             style={{ height: '100%' }}
             popup
@@ -178,20 +194,32 @@ export function CalendarView({ initialEvents }: { initialEvents: CalendarEvent[]
                         {items.length === 0 ? (
                           <div className="rounded-md border border-dashed border-gray-200 p-2 text-center text-xs text-gray-400">No events</div>
                         ) : (
-                          items.map(ev => (
+                          items.map(ev => {
+                            const emphasize = isActionRequired(ev.resource.type)
+                            return (
                             <button
                               key={ev.id}
                               onClick={() => router.push(`/events/${ev.id}`)}
                               className={`w-full rounded-md border p-2 text-left transition ${
                                 isBefore(ev.start, new Date()) ? 'opacity-60' : 'opacity-100'
                               }`}
-                              style={{ borderColor: ev.resource.color + '44', backgroundColor: ev.resource.color + '14' }}
+                              style={{
+                                borderColor: ev.resource.color + '44',
+                                backgroundColor: ev.resource.color + '14',
+                                boxShadow: emphasize ? 'inset 4px 0 0 rgba(15, 23, 42, 0.55)' : undefined,
+                              }}
                             >
-                              <p className="truncate text-xs font-semibold text-gray-900">{ev.title}</p>
+                              <p className={`flex items-center gap-1 truncate text-xs ${emphasize ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
+                                {mustHandIn(ev.resource.type) && (
+                                  <Upload className="h-3 w-3 shrink-0 text-amber-600" strokeWidth={2.75} aria-hidden />
+                                )}
+                                <span className="truncate">{ev.title}</span>
+                              </p>
                               <p className="mt-0.5 truncate text-[11px] text-gray-600">{ev.resource.courseCode ?? ev.resource.courseName}</p>
                               <p className="mt-1 text-[11px] text-gray-500">{ev.allDay ? 'All day' : format(ev.start, 'HH:mm')}</p>
                             </button>
-                          ))
+                            )
+                          })
                         )}
                       </div>
                     </div>

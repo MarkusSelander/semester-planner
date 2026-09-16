@@ -7,15 +7,7 @@ import { isBefore } from 'date-fns'
 import { formatEvent, isTodayTz } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
 import { EventActions } from './EventActions'
-
-const typeColors: Record<string, string> = {
-  EXAM: 'bg-red-100 text-red-700',
-  ASSIGNMENT: 'bg-orange-100 text-orange-700',
-  PROJECT: 'bg-purple-100 text-purple-700',
-  EXERCISE: 'bg-blue-100 text-blue-700',
-  LECTURE: 'bg-slate-100 text-slate-700',
-  OTHER: 'bg-slate-100 text-slate-600',
-}
+import { HandInTag, TypeBadge } from '@/components/event-type'
 
 const priorityColors: Record<string, string> = {
   HIGH: 'bg-red-50 text-red-700 border border-red-200',
@@ -51,7 +43,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`text-xs px-2 py-0.5 rounded font-medium ${typeColors[event.type] ?? ''}`}>{event.type}</span>
+              <TypeBadge type={event.type} />
+              {!event.isDone && <HandInTag type={event.type} />}
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${priorityColors[event.priority]}`}>{event.priority} priority</span>
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${status.cls}`}>{status.label}</span>
             </div>
@@ -123,7 +116,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
               </div>
               <div className="flex items-start justify-between gap-2">
                 <span className="text-slate-500">Type</span>
-                <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeColors[event.type] ?? ''}`}>{event.type}</span>
+                <TypeBadge type={event.type} />
               </div>
               <div className="flex items-start justify-between gap-2">
                 <span className="text-slate-500">Priority</span>

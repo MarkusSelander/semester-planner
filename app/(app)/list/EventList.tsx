@@ -16,15 +16,7 @@ import {
   getBrowserTimezone,
   isTodayTz,
 } from '@/lib/dates'
-
-const TYPE_BADGE: Record<string, string> = {
-  EXAM:       'bg-red-50 text-red-600 ring-1 ring-red-200',
-  ASSIGNMENT: 'bg-amber-50 text-amber-600 ring-1 ring-amber-200',
-  PROJECT:    'bg-purple-50 text-purple-600 ring-1 ring-purple-200',
-  EXERCISE:   'bg-blue-50 text-blue-600 ring-1 ring-blue-200',
-  LECTURE:    'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
-  OTHER:      'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
-}
+import { HandInTag, TypeBadge, eventTypeMeta, isActionRequired } from '@/components/event-type'
 
 type Semester = { id: string; name: string }
 type View = 'all' | 'tasks' | 'lectures'
@@ -197,14 +189,19 @@ export function EventList({
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
                 {grouped[key].map(ev => {
                   const status = eventStatus(ev, timeZone)
+                  const emphasize = isActionRequired(ev.type)
+                  const meta = eventTypeMeta(ev.type)
                   return (
                     <div
                       key={ev.id}
-                      className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50 ${ev.isDone ? 'opacity-60' : ''}`}
+                      className={`flex items-stretch gap-3 pr-4 py-3 transition-colors hover:bg-slate-50 ${ev.isDone ? 'opacity-60' : ''} ${emphasize ? 'bg-slate-50/40' : ''}`}
                     >
+                      {/* Type accent: thick for things you must hand in, faint for lectures */}
+                      <div className={`${emphasize ? 'w-1.5' : 'w-1'} flex-shrink-0 rounded-r ${meta.accent}`} />
+
                       <button
                         onClick={() => toggleDone(ev)}
-                        className="flex-shrink-0 text-slate-300 hover:text-emerald-500 transition-colors"
+                        className="flex-shrink-0 self-center text-slate-300 hover:text-emerald-500 transition-colors"
                       >
                         {ev.isDone
                           ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -212,13 +209,13 @@ export function EventList({
                       </button>
 
                       <div
-                        className="w-1 h-7 rounded-full flex-shrink-0"
+                        className="w-1 h-7 self-center rounded-full flex-shrink-0"
                         style={{ backgroundColor: ev.course.color }}
                       />
 
                       <Link href={`/events/${ev.id}`} className="flex-1 min-w-0 flex items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-medium truncate ${ev.isDone ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                          <p className={`text-sm truncate ${ev.isDone ? 'line-through text-slate-400' : emphasize ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
                             {ev.title}
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">
@@ -226,9 +223,8 @@ export function EventList({
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${TYPE_BADGE[ev.type] ?? ''}`}>
-                            {ev.type[0] + ev.type.slice(1).toLowerCase()}
-                          </span>
+                          {!ev.isDone && <HandInTag type={ev.type} />}
+                          <TypeBadge type={ev.type} />
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${status.cls}`}>
                             {status.label}
                           </span>

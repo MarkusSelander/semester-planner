@@ -13,6 +13,7 @@ import {
   isTodayTz,
 } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
+import { HandInTag, TypeBadge, eventTypeMeta, isActionRequired } from '@/components/event-type'
 
 export default async function DashboardPage() {
   const hdrs = await headers()
@@ -26,15 +27,6 @@ export default async function DashboardPage() {
   ])
 
   const timeZone = await getRequestTimezone()
-
-  const TYPE_STYLES: Record<string, { badge: string; bar: string }> = {
-    EXAM:       { badge: 'bg-red-50 text-red-700 ring-1 ring-red-200', bar: 'bg-red-500' },
-    ASSIGNMENT: { badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', bar: 'bg-amber-500' },
-    PROJECT:    { badge: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200', bar: 'bg-purple-500' },
-    EXERCISE:   { badge: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200', bar: 'bg-blue-500' },
-    LECTURE:    { badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200', bar: 'bg-slate-400' },
-    OTHER:      { badge: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200', bar: 'bg-slate-400' },
-  }
 
   function eventDateLabel(date: Date, isAllDay?: boolean) {
     return dateLabel(date, timeZone, isAllDay)
@@ -87,12 +79,13 @@ export default async function DashboardPage() {
             ) : (
               <Link href={`/events/${nextEvent.id}`} className="block rounded-xl border border-slate-200 p-4 hover:border-slate-300 hover:shadow-sm transition-all">
                 <div className="flex items-start gap-4">
-                  <div className={`h-10 w-1.5 rounded-full ${TYPE_STYLES[nextEvent.type]?.bar ?? 'bg-slate-400'}`} />
+                  <div className={`h-10 ${isActionRequired(nextEvent.type) ? 'w-1.5' : 'w-1'} rounded-full ${eventTypeMeta(nextEvent.type).accent}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-slate-500 mb-1">Next up</p>
                     <p className="text-lg font-semibold text-slate-900 truncate">{nextEvent.title}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[nextEvent.type]?.badge ?? ''}`}>{nextEvent.type}</span>
+                      <TypeBadge type={nextEvent.type} />
+                      <HandInTag type={nextEvent.type} />
                       <span className="text-xs text-slate-500">{nextEvent.course.code ?? nextEvent.course.name}</span>
                       <span className="text-xs text-slate-400">{nextEvent.isAllDay ? formatEvent(nextEvent.startAt, 'd MMM', timeZone, true) : formatEvent(nextEvent.startAt, 'd MMM · HH:mm', timeZone)}</span>
                     </div>
@@ -112,21 +105,23 @@ export default async function DashboardPage() {
             ) : (
               <div className="divide-y divide-slate-100">
                 {thisWeekEvents.map(event => {
-                  const styles = TYPE_STYLES[event.type] ?? TYPE_STYLES.OTHER
+                  const meta = eventTypeMeta(event.type)
+                  const emphasize = isActionRequired(event.type)
                   return (
                     <Link
                       key={event.id}
                       href={`/events/${event.id}`}
-                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors"
+                      className={`flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors ${emphasize ? 'bg-slate-50/40' : ''}`}
                     >
-                      <div className={`h-7 w-1 rounded-full ${styles.bar}`} />
+                      <div className={`h-7 ${emphasize ? 'w-1.5' : 'w-1'} rounded-full ${meta.accent}`} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
+                        <p className={`text-sm truncate ${emphasize ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>{event.title}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{event.course.code ?? event.course.name}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-slate-500">{eventDateLabel(event.startAt, event.isAllDay)}</span>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${styles.badge}`}>{event.type}</span>
+                        <HandInTag type={event.type} />
+                        <TypeBadge type={event.type} />
                       </div>
                     </Link>
                   )
