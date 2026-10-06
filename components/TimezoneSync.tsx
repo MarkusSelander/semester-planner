@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   TIMEZONE_COOKIE,
   TIMEZONE_MANUAL_COOKIE,
+  TIMEZONE_PERSISTED_KEY,
   getBrowserTimezone,
   parseTimezoneCookie,
   setTimezoneCookies,
@@ -18,11 +19,29 @@ function readCookie(name: string) {
   return raw ? decodeURIComponent(raw) : undefined
 }
 
+// TIMEZONE_PERSISTED_KEY remembers which timezone was last saved to the profile,
+// so the PUT only happens when it changes rather than on every page load.
+function readPersisted() {
+  try {
+    return localStorage.getItem(TIMEZONE_PERSISTED_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writePersisted(timeZone: string) {
+  try {
+    localStorage.setItem(TIMEZONE_PERSISTED_KEY, timeZone)
+  } catch {
+    // storage unavailable (private mode); we'll just persist again next load
+  }
+}
+
 export function TimezoneSync() {
   const router = useRouter()
   const pathname = usePathname()
   const didRefresh = useRef(false)
-  const didPersist = useRef(false)
+  const persisting = useRef(false)
 
   useEffect(() => {
     if (readCookie(TIMEZONE_MANUAL_COOKIE) === '1') return
@@ -38,15 +57,20 @@ export function TimezoneSync() {
     }
 
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup')
-    if (isAuthRoute || didPersist.current) return
-    didPersist.current = true
+    if (isAuthRoute || persisting.current || readPersisted() === timeZone) return
+    persisting.current = true
     fetch('/api/user/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ timezone: timeZone }),
-    }).catch(() => {
-      didPersist.current = false
     })
+      .then(res => {
+        if (res.ok) writePersisted(timeZone)
+      })
+      .catch(() => {})
+      .finally(() => {
+        persisting.current = false
+      })
   }, [pathname, router])
 
   return null

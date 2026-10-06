@@ -9,6 +9,7 @@ import { TZDate, tz } from '@date-fns/tz'
 
 export const TIMEZONE_COOKIE = 'sp-tz'
 export const TIMEZONE_MANUAL_COOKIE = 'sp-tz-manual'
+export const TIMEZONE_PERSISTED_KEY = 'sp-tz-persisted'
 export const DEFAULT_TIMEZONE = 'Europe/Oslo'
 
 export function isValidTimeZone(timeZone: string): boolean {
