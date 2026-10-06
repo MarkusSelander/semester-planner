@@ -3,7 +3,7 @@ import { getSemester } from '@/lib/queries'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Upload, Edit, CalendarArrowDown } from 'lucide-react'
-import { ButtonLink } from '@/components/ui/button'
+import { ButtonAnchor, ButtonLink } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CourseBadge } from '@/components/shared/CourseBadge'
 import { formatDateOnly, formatEvent } from '@/lib/dates'
@@ -32,10 +32,15 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
           </p>
         </div>
         <div className="flex gap-2">
-          <ButtonLink href={`/api/export/ics?semesterId=${semesterId}`} variant="outline" size="sm">
+          <ButtonAnchor
+            href={`/api/export/ics?semesterId=${semesterId}`}
+            download
+            variant="outline"
+            size="sm"
+          >
             <CalendarArrowDown className="h-4 w-4 mr-1" />
             Export
-          </ButtonLink>
+          </ButtonAnchor>
           <ButtonLink href={`/semesters/${semesterId}/import`} variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-1" />
             Import PDF
