@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUserId, ok, err } from '@/lib/api'
+import { getAuthUserId, ok, err, isRecordNotFound } from '@/lib/api'
 import { getSemesterMeta } from '@/lib/queries'
 import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
@@ -31,19 +31,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ seme
   const parsed = UpdateSchema.safeParse(body)
   if (!parsed.success) return err(parsed.error.message)
 
-  const existing = await prisma.semester.findFirst({ where: { id: semesterId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
-
-  const updated = await prisma.semester.update({
-    where: { id: semesterId },
-    data: {
-      ...parsed.data,
-      startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : undefined,
-      endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : undefined,
-    },
-  })
-  invalidateUserCache(auth.userId, ['semesters'])
-  return ok(updated)
+  try {
+    const updated = await prisma.semester.update({
+      where: { id: semesterId, userId: auth.userId },
+      data: {
+        ...parsed.data,
+        startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : undefined,
+        endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : undefined,
+      },
+    })
+    invalidateUserCache(auth.userId, ['semesters'])
+    return ok(updated)
+  } catch (error) {
+    if (isRecordNotFound(error)) return err('Not found', 404)
+    throw error
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ semesterId: string }> }) {
@@ -51,10 +53,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ sem
   if ('error' in auth) return auth.error
   const { semesterId } = await params
 
-  const existing = await prisma.semester.findFirst({ where: { id: semesterId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
+  const { count } = await prisma.semester.deleteMany({ where: { id: semesterId, userId: auth.userId } })
+  if (!count) return err('Not found', 404)
 
-  await prisma.semester.delete({ where: { id: semesterId } })
   invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }

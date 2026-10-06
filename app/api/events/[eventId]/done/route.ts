@@ -8,16 +8,17 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ even
   if ('error' in auth) return auth.error
   const { eventId } = await params
 
-  const existing = await prisma.event.findFirst({ where: { id: eventId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
+  // Ownership check and toggle in one round trip; SET expressions see the pre-update row.
+  const rows = await prisma.$queryRaw<{ id: string; isDone: boolean; doneAt: Date | null }[]>`
+    UPDATE events
+    SET "isDone"    = NOT "isDone",
+        "doneAt"    = CASE WHEN "isDone" THEN NULL ELSE now() END,
+        "updatedAt" = now()
+    WHERE id = ${eventId} AND "userId" = ${auth.userId}
+    RETURNING id, "isDone", "doneAt"
+  `
+  if (!rows.length) return err('Not found', 404)
 
-  const updated = await prisma.event.update({
-    where: { id: eventId },
-    data: {
-      isDone: !existing.isDone,
-      doneAt: !existing.isDone ? new Date() : null,
-    },
-  })
   invalidateUserCache(auth.userId, ['events'])
-  return ok(updated)
+  return ok(rows[0])
 }

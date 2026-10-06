@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUserId, ok, err } from '@/lib/api'
+import { getAuthUserId, ok, err, isRecordNotFound } from '@/lib/api'
 import { createRemindersForEvent, deleteRemindersForEvent } from '@/lib/reminders'
 import { getEvent } from '@/lib/queries'
 import { invalidateUserCache } from '@/lib/cache'
@@ -24,13 +24,15 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ eventI
   if ('error' in auth) return auth.error
   const { eventId } = await params
 
-  const event = await getEvent(auth.userId, eventId)
+  const [event, reminders] = await Promise.all([
+    getEvent(auth.userId, eventId),
+    prisma.reminder.findMany({
+      where: { eventId, userId: auth.userId },
+      orderBy: { remindAt: 'asc' },
+    }),
+  ])
   if (!event) return err('Not found', 404)
 
-  const reminders = await prisma.reminder.findMany({
-    where: { eventId },
-    orderBy: { remindAt: 'asc' },
-  })
   return ok({ ...event, reminders })
 }
 
@@ -43,25 +45,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ even
   const parsed = UpdateSchema.safeParse(body)
   if (!parsed.success) return err(parsed.error.message)
 
-  const existing = await prisma.event.findFirst({ where: { id: eventId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
-
-  const user = await prisma.user.findUnique({ where: { id: auth.userId } })
-
-  const updated = await prisma.event.update({
-    where: { id: eventId },
-    data: {
-      ...parsed.data,
-      startAt: parsed.data.startAt ? new Date(parsed.data.startAt) : undefined,
-      endAt: parsed.data.endAt ? new Date(parsed.data.endAt) : parsed.data.endAt,
-    },
-    include: {
-      course: { select: { id: true, name: true, code: true, color: true } },
-    },
-  })
+  const remindersChanged = Boolean(parsed.data.type || parsed.data.startAt)
+  let updated, user
+  try {
+    ;[updated, user] = await Promise.all([
+      prisma.event.update({
+        where: { id: eventId, userId: auth.userId },
+        data: {
+          ...parsed.data,
+          startAt: parsed.data.startAt ? new Date(parsed.data.startAt) : undefined,
+          endAt: parsed.data.endAt ? new Date(parsed.data.endAt) : parsed.data.endAt,
+        },
+        include: {
+          course: { select: { id: true, name: true, code: true, color: true } },
+        },
+      }),
+      remindersChanged
+        ? prisma.user.findUnique({ where: { id: auth.userId }, select: { emailReminders: true } })
+        : null,
+    ])
+  } catch (error) {
+    if (isRecordNotFound(error)) return err('Not found', 404)
+    throw error
+  }
 
   // If type or startAt changed, recreate reminders
-  if (parsed.data.type || parsed.data.startAt) {
+  if (remindersChanged) {
     await deleteRemindersForEvent(eventId)
     await createRemindersForEvent(updated, user?.emailReminders ?? true)
   }
@@ -75,10 +84,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ eve
   if ('error' in auth) return auth.error
   const { eventId } = await params
 
-  const existing = await prisma.event.findFirst({ where: { id: eventId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
+  const { count } = await prisma.event.deleteMany({ where: { id: eventId, userId: auth.userId } })
+  if (!count) return err('Not found', 404)
 
-  await prisma.event.delete({ where: { id: eventId } })
   invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }
