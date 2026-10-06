@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -120,7 +121,6 @@ model Event {
   @@index([userId, startAt])
   @@index([courseId])
   @@index([semesterId, startAt])
-  @@index([userId, isDone])
   @@index([userId, isDone, startAt])
   @@map("events")
 }
@@ -141,6 +141,7 @@ model PdfImport {
   semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([semesterId])
   @@map("pdf_imports")
 }
 
@@ -159,5 +160,6 @@ model Reminder {
 
   @@index([sent, remindAt])
   @@index([eventId])
+  @@index([userId])
   @@map("reminders")
 }
