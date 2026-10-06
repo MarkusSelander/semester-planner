@@ -8,6 +8,8 @@ const JWKS = createRemoteJWKSet(
   new URL('https://wqfhplpstiybpskszzxe.supabase.co/auth/v1/.well-known/jwks.json')
 )
 
+const DEBUG_TIMING = process.env.NODE_ENV !== 'production'
+
 const AUTH_COOKIE_PATTERN = /^sb-[a-z0-9]+-auth-token(?:\.\d+)?$/
 const AUTH_COOKIE_SUFFIX_PATTERN = /\.(\d+)$/
 
@@ -150,8 +152,8 @@ export async function proxy(request: NextRequest) {
     userId = user?.id ?? null
     email = user?.email ?? ''
     fullName = user?.user_metadata?.full_name ?? null
-    console.log(`[proxy] getUser (network fallback): ${Date.now() - t0}ms  path=${pathname}`)
-  } else {
+    if (DEBUG_TIMING) console.log(`[proxy] getUser (network fallback): ${Date.now() - t0}ms  path=${pathname}`)
+  } else if (DEBUG_TIMING) {
     console.log(`[proxy] getUser (local JWT): ${Date.now() - t0}ms  path=${pathname}`)
   }
 
