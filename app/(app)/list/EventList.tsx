@@ -13,7 +13,6 @@ import {
   dateLabel,
   formatEvent,
   formatTz,
-  getBrowserTimezone,
   isTodayTz,
 } from '@/lib/dates'
 import { HandInTag, TypeBadge, eventTypeMeta, isActionRequired } from '@/components/event-type'
@@ -47,6 +46,7 @@ export function EventList({
   doneFilter,
   view,
   overdueOnly = false,
+  timeZone,
 }: {
   initialEvents: ListEvent[]
   semesters: Semester[]
@@ -55,10 +55,10 @@ export function EventList({
   doneFilter: string
   view: View
   overdueOnly?: boolean
+  timeZone: string
 }) {
   const router = useRouter()
   const [events, setEvents] = useState<ListEvent[]>(initialEvents)
-  const timeZone = getBrowserTimezone()
 
   const { grouped, dateKeys } = useMemo(() => {
     const now = new Date()
@@ -101,10 +101,14 @@ export function EventList({
   }
 
   async function toggleDone(ev: ListEvent) {
-    try {
-      await fetch(`/api/events/${ev.id}/done`, { method: 'PATCH' })
+    const flip = () =>
       setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, isDone: !e.isDone } : e))
+    flip()
+    try {
+      const res = await fetch(`/api/events/${ev.id}/done`, { method: 'PATCH' })
+      if (!res.ok) throw new Error()
     } catch {
+      flip()
       toast.error('Failed to update')
     }
   }
@@ -224,6 +228,7 @@ export function EventList({
 
                       <button
                         onClick={() => toggleDone(ev)}
+                        aria-label={ev.isDone ? 'Mark as not done' : 'Mark as done'}
                         className="flex-shrink-0 self-center text-slate-300 hover:text-emerald-500 transition-colors"
                       >
                         {ev.isDone

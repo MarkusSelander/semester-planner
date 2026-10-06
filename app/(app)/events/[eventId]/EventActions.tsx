@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
@@ -9,23 +9,24 @@ import { CheckCircle2, Circle, Edit, Trash2 } from 'lucide-react'
 
 export function EventActions({ eventId, isDone }: { eventId: string; isDone: boolean }) {
   const [done, setDone] = useState(isDone)
-  const [toggling, setToggling] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [, startTransition] = useTransition()
   const router = useRouter()
 
+  // Each PATCH flips the stored value, so rapid repeated clicks stay consistent
+  // with the local state without disabling the button.
   async function toggleDone() {
-    setToggling(true)
+    const next = !done
+    setDone(next)
     try {
       const res = await fetch(`/api/events/${eventId}/done`, { method: 'PATCH' })
       if (!res.ok) throw new Error()
-      setDone(d => !d)
-      toast.success(done ? 'Marked as not done' : 'Marked as done!')
-      router.refresh()
+      toast.success(next ? 'Marked as done!' : 'Marked as not done')
+      startTransition(() => router.refresh())
     } catch {
+      setDone(d => !d)
       toast.error('Failed to update')
-    } finally {
-      setToggling(false)
     }
   }
 
@@ -49,7 +50,7 @@ export function EventActions({ eventId, isDone }: { eventId: string; isDone: boo
         variant="outline"
         size="sm"
         onClick={toggleDone}
-        disabled={toggling}
+        aria-pressed={done}
         className={done ? 'text-green-600 border-green-200 hover:text-green-700' : ''}
       >
         {done
