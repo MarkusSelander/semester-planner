@@ -12,13 +12,24 @@ export const TIMEZONE_MANUAL_COOKIE = 'sp-tz-manual'
 export const TIMEZONE_PERSISTED_KEY = 'sp-tz-persisted'
 export const DEFAULT_TIMEZONE = 'Europe/Oslo'
 
+// Constructing an Intl.DateTimeFormat is the expensive part of every date
+// helper below, and lists render hundreds of dates, so results are cached
+// per timezone.
+const validTimeZones = new Map<string, boolean>()
+const tzFns = new Map<string, ReturnType<typeof tz>>()
+
 export function isValidTimeZone(timeZone: string): boolean {
-  try {
-    Intl.DateTimeFormat('en-US', { timeZone })
-    return true
-  } catch {
-    return false
+  let valid = validTimeZones.get(timeZone)
+  if (valid === undefined) {
+    try {
+      Intl.DateTimeFormat('en-US', { timeZone })
+      valid = true
+    } catch {
+      valid = false
+    }
+    validTimeZones.set(timeZone, valid)
   }
+  return valid
 }
 
 export function getBrowserTimezone(): string {
@@ -37,7 +48,13 @@ export function parseTimezoneCookie(value: string | undefined): string | null {
 }
 
 function tzFn(timeZone: string) {
-  return tz(isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIMEZONE)
+  const zone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIMEZONE
+  let fn = tzFns.get(zone)
+  if (!fn) {
+    fn = tz(zone)
+    tzFns.set(zone, fn)
+  }
+  return fn
 }
 
 /** All-day and date-only values are calendar dates, not instants. */
