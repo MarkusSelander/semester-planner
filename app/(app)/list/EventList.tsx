@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, CheckCircle2, Circle, CalendarArrowDown, AlertTriangle } from 'lucide-react'
-import { ButtonLink } from '@/components/ui/button'
+import { ButtonAnchor, ButtonLink } from '@/components/ui/button'
 import { isBefore } from 'date-fns'
 import { toast } from 'sonner'
 import type { ListEvent } from '@/lib/queries'
@@ -26,17 +26,86 @@ const TABS: { value: View; label: string }[] = [
   { value: 'lectures', label: 'Lectures' },
 ]
 
-function eventDateLabel(dateStr: string, isAllDay: boolean, timeZone: string) {
-  return dateLabel(dateStr, timeZone, isAllDay)
+type BaseStatus = 'Today' | 'Overdue' | 'Upcoming'
+
+const STATUS_CLS: Record<BaseStatus | 'Done', string> = {
+  Done: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+  Today: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  Overdue: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  Upcoming: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
 }
 
-function eventStatus(ev: ListEvent, timeZone: string) {
+// Timezone-aware formatting is the expensive part of rendering hundreds of
+// rows, so it is computed once per event list rather than on every toggle.
+type RowDisplay = { dayKey: string; time: string; baseStatus: BaseStatus; isPast: boolean }
+
+function rowDisplay(ev: ListEvent, timeZone: string, now: Date): RowDisplay {
   const d = new Date(ev.startAt)
-  if (ev.isDone) return { label: 'Done', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' }
-  if (isTodayTz(d, timeZone)) return { label: 'Today', cls: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' }
-  if (isBefore(d, new Date())) return { label: 'Overdue', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' }
-  return { label: 'Upcoming', cls: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' }
+  const isPast = isBefore(d, now)
+  return {
+    dayKey: calendarDayKey(ev.startAt, timeZone, ev.isAllDay),
+    time: ev.isAllDay ? 'All day' : formatEvent(ev.startAt, 'HH:mm', timeZone),
+    baseStatus: isTodayTz(d, timeZone) ? 'Today' : isPast ? 'Overdue' : 'Upcoming',
+    isPast,
+  }
 }
+
+const EventRow = memo(function EventRow({
+  ev,
+  isDone,
+  display,
+  onToggle,
+}: {
+  ev: ListEvent
+  isDone: boolean
+  display: RowDisplay
+  onToggle: (id: string) => void
+}) {
+  const status = isDone ? 'Done' : display.baseStatus
+  const emphasize = isActionRequired(ev.type)
+  const meta = eventTypeMeta(ev.type)
+  return (
+    <div
+      className={`flex items-stretch gap-3 pr-4 py-3 transition-colors hover:bg-slate-50 ${isDone ? 'opacity-60' : ''} ${emphasize ? 'bg-slate-50/40' : ''}`}
+    >
+      {/* Type accent: thick for things you must hand in, faint for lectures */}
+      <div className={`${emphasize ? 'w-1.5' : 'w-1'} flex-shrink-0 rounded-r ${meta.accent}`} />
+
+      <button
+        onClick={() => onToggle(ev.id)}
+        aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+        className="flex-shrink-0 self-center text-slate-300 hover:text-emerald-500 transition-colors"
+      >
+        {isDone
+          ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          : <Circle className="h-5 w-5" />}
+      </button>
+
+      <div
+        className="w-1 h-7 self-center rounded-full flex-shrink-0"
+        style={{ backgroundColor: ev.course.color }}
+      />
+
+      <Link href={`/events/${ev.id}`} className="flex-1 min-w-0 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm truncate ${isDone ? 'line-through text-slate-400' : emphasize ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
+            {ev.title}
+          </p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {ev.course.code ?? ev.course.name} · {display.time}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {!isDone && <HandInTag type={ev.type} />}
+          <TypeBadge type={ev.type} />
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CLS[status]}`}>
+            {status}
+          </span>
+        </div>
+      </Link>
+    </div>
+  )
+})
 
 export function EventList({
   initialEvents,
@@ -58,22 +127,28 @@ export function EventList({
   timeZone: string
 }) {
   const router = useRouter()
-  const [events, setEvents] = useState<ListEvent[]>(initialEvents)
+  const [doneById, setDoneById] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(initialEvents.map(ev => [ev.id, ev.isDone]))
+  )
+
+  const displayById = useMemo(() => {
+    const now = new Date()
+    return new Map(initialEvents.map(ev => [ev.id, rowDisplay(ev, timeZone, now)]))
+  }, [initialEvents, timeZone])
 
   const { grouped, dateKeys } = useMemo(() => {
-    const now = new Date()
     const visible = overdueOnly
-      ? events.filter(ev => !ev.isDone && isBefore(new Date(ev.startAt), now))
-      : events
+      ? initialEvents.filter(ev => !doneById[ev.id] && displayById.get(ev.id)!.isPast)
+      : initialEvents
     const groups: Record<string, ListEvent[]> = {}
     for (const ev of visible) {
-      const key = calendarDayKey(ev.startAt, timeZone, ev.isAllDay)
+      const key = displayById.get(ev.id)!.dayKey
       if (!groups[key]) groups[key] = []
       groups[key].push(ev)
     }
     const keys = Object.keys(groups).sort()
     return { grouped: groups, dateKeys: keys }
-  }, [events, timeZone, overdueOnly])
+  }, [initialEvents, displayById, overdueOnly, doneById])
 
   function buildParams(overrides: Record<string, string>) {
     const sp = new URLSearchParams()
@@ -100,31 +175,31 @@ export function EventList({
     router.push(`/list?${buildParams({ [key]: value })}`)
   }
 
-  async function toggleDone(ev: ListEvent) {
-    const flip = () =>
-      setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, isDone: !e.isDone } : e))
+  const toggleDone = useCallback(async (id: string) => {
+    const flip = () => setDoneById(prev => ({ ...prev, [id]: !prev[id] }))
     flip()
     try {
-      const res = await fetch(`/api/events/${ev.id}/done`, { method: 'PATCH' })
+      const res = await fetch(`/api/events/${id}/done`, { method: 'PATCH' })
       if (!res.ok) throw new Error()
     } catch {
       flip()
       toast.error('Failed to update')
     }
-  }
+  }, [])
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-2xl font-bold text-slate-900">Events</h1>
         <div className="flex gap-2">
-          <ButtonLink
+          <ButtonAnchor
             href={`/api/export/ics${semesterId ? `?semesterId=${semesterId}` : ''}`}
+            download
             variant="outline"
           >
             <CalendarArrowDown className="h-4 w-4 mr-1.5" />
             Export
-          </ButtonLink>
+          </ButtonAnchor>
           <ButtonLink href="/events/new">
             <Plus className="h-4 w-4 mr-1.5" />
             Add event
@@ -209,58 +284,20 @@ export function EventList({
             <div key={key}>
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  {eventDateLabel(grouped[key][0].startAt, grouped[key][0].isAllDay, timeZone)}
+                  {dateLabel(grouped[key][0].startAt, timeZone, grouped[key][0].isAllDay)}
                 </h2>
                 <span className="text-xs text-slate-400">{formatTz(`${key}T12:00:00Z`, 'd MMM', 'UTC')}</span>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-                {grouped[key].map(ev => {
-                  const status = eventStatus(ev, timeZone)
-                  const emphasize = isActionRequired(ev.type)
-                  const meta = eventTypeMeta(ev.type)
-                  return (
-                    <div
-                      key={ev.id}
-                      className={`flex items-stretch gap-3 pr-4 py-3 transition-colors hover:bg-slate-50 ${ev.isDone ? 'opacity-60' : ''} ${emphasize ? 'bg-slate-50/40' : ''}`}
-                    >
-                      {/* Type accent: thick for things you must hand in, faint for lectures */}
-                      <div className={`${emphasize ? 'w-1.5' : 'w-1'} flex-shrink-0 rounded-r ${meta.accent}`} />
-
-                      <button
-                        onClick={() => toggleDone(ev)}
-                        aria-label={ev.isDone ? 'Mark as not done' : 'Mark as done'}
-                        className="flex-shrink-0 self-center text-slate-300 hover:text-emerald-500 transition-colors"
-                      >
-                        {ev.isDone
-                          ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                          : <Circle className="h-5 w-5" />}
-                      </button>
-
-                      <div
-                        className="w-1 h-7 self-center rounded-full flex-shrink-0"
-                        style={{ backgroundColor: ev.course.color }}
-                      />
-
-                      <Link href={`/events/${ev.id}`} className="flex-1 min-w-0 flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-sm truncate ${ev.isDone ? 'line-through text-slate-400' : emphasize ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
-                            {ev.title}
-                          </p>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {ev.course.code ?? ev.course.name} · {ev.isAllDay ? 'All day' : formatEvent(ev.startAt, 'HH:mm', timeZone)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {!ev.isDone && <HandInTag type={ev.type} />}
-                          <TypeBadge type={ev.type} />
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${status.cls}`}>
-                            {status.label}
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  )
-                })}
+                {grouped[key].map(ev => (
+                  <EventRow
+                    key={ev.id}
+                    ev={ev}
+                    isDone={doneById[ev.id]}
+                    display={displayById.get(ev.id)!}
+                    onToggle={toggleDone}
+                  />
+                ))}
               </div>
             </div>
           ))}
