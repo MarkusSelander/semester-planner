@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
@@ -51,4 +52,9 @@ export function ok<T>(data: T, status = 200) {
 
 export function err(message: string, status = 400) {
   return NextResponse.json({ data: null, error: message }, { status })
+}
+
+/** Prisma throws P2025 when an update/delete `where` (including the userId ownership filter) matches no row. */
+export function isRecordNotFound(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025'
 }

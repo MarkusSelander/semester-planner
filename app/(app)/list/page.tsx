@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getSemesters, getFilteredEvents } from '@/lib/queries'
+import { getRequestTimezone } from '@/lib/dates.server'
 import { EventList } from './EventList'
 
 const TASK_TYPES = ['EXERCISE', 'ASSIGNMENT', 'EXAM', 'PROJECT']
@@ -25,7 +26,7 @@ export default async function ListPage({
 
   const types = view === 'tasks' ? TASK_TYPES : view === 'lectures' ? LECTURE_TYPES : undefined
 
-  const [events, semesters] = await Promise.all([
+  const [events, semesters, timeZone] = await Promise.all([
     getFilteredEvents(userId, {
       semesterId: semesterId || undefined,
       type: typeFilter || undefined,
@@ -33,6 +34,7 @@ export default async function ListPage({
       done: doneFilter || undefined,
     }),
     getSemesters(userId),
+    getRequestTimezone(),
   ])
 
   return (
@@ -45,6 +47,7 @@ export default async function ListPage({
       doneFilter={doneFilter}
       view={view}
       overdueOnly={overdueOnly}
+      timeZone={timeZone}
     />
   )
 }

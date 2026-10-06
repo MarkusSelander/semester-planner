@@ -15,13 +15,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
   const parsed = Schema.safeParse(body)
   if (!parsed.success) return err(parsed.error.message)
 
-  const existing = await prisma.event.findFirst({ where: { id: eventId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
-
-  const updated = await prisma.event.update({
-    where: { id: eventId },
+  const { count } = await prisma.event.updateMany({
+    where: { id: eventId, userId: auth.userId },
     data: { notes: parsed.data.notes },
   })
+  if (!count) return err('Not found', 404)
+
   invalidateUserCache(auth.userId, ['events'])
-  return ok(updated)
+  return ok({ id: eventId, notes: parsed.data.notes })
 }

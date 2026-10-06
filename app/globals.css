@@ -128,3 +128,17 @@
     @apply font-sans;
   }
 }
+
+/* Only becomes visible if a navigation takes longer than ~120ms, so fast
+   (prefetched) transitions don't flash an indicator. */
+.nav-pending-hint {
+  opacity: 0;
+}
+.nav-pending-hint[data-pending='true'] {
+  animation: nav-pending-fade-in 150ms 120ms forwards;
+}
+@keyframes nav-pending-fade-in {
+  to {
+    opacity: 1;
+  }
+}

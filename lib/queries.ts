@@ -194,25 +194,22 @@ export const getActiveSemesters = cache((userId: string) =>
             s.name,
             s."startDate",
             s."endDate",
-            COUNT(DISTINCT c.id)::int        AS course_count,
-            COUNT(DISTINCT e.id)::int        AS event_count,
+            (SELECT COUNT(*) FROM courses c WHERE c."semesterId" = s.id)::int AS course_count,
+            (SELECT COUNT(*) FROM events e WHERE e."semesterId" = s.id)::int  AS event_count,
             COALESCE(
-              json_agg(
-                DISTINCT jsonb_build_object(
-                  'id', c.id,
-                  'name', c.name,
-                  'code', c.code,
-                  'color', c.color
+              (
+                SELECT json_agg(
+                  json_build_object('id', c.id, 'name', c.name, 'code', c.code, 'color', c.color)
+                  ORDER BY c.name
                 )
-              ) FILTER (WHERE c.id IS NOT NULL),
+                FROM courses c
+                WHERE c."semesterId" = s.id
+              ),
               '[]'
             ) AS course_colors
           FROM semesters s
-          LEFT JOIN courses c ON c."semesterId" = s.id
-          LEFT JOIN events  e ON e."semesterId" = s.id
           WHERE s."userId" = ${userId}
             AND s."isActive" = true
-          GROUP BY s.id, s.name, s."startDate", s."endDate"
           ORDER BY s."startDate" DESC
           LIMIT 3
         `.then(rows => rows.map(mapRawSemester))

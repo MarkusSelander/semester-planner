@@ -90,4 +90,18 @@ function ButtonLink({ className, variant, size, ...props }: ButtonLinkProps) {
   )
 }
 
-export { Button, ButtonLink, buttonVariants }
+/** For non-route targets (file downloads, API routes) that must not be prefetched or client-navigated. */
+type ButtonAnchorProps = React.ComponentProps<"a"> &
+  VariantProps<typeof buttonVariants>
+
+function ButtonAnchor({ className, variant, size, ...props }: ButtonAnchorProps) {
+  return (
+    <a
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+export { Button, ButtonLink, ButtonAnchor, buttonVariants }

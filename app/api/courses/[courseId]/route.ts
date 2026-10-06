@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUserId, ok, err } from '@/lib/api'
+import { getAuthUserId, ok, err, isRecordNotFound } from '@/lib/api'
 import { getCourseMeta } from '@/lib/queries'
 import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
@@ -30,12 +30,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ cour
   const parsed = UpdateSchema.safeParse(body)
   if (!parsed.success) return err(parsed.error.message)
 
-  const existing = await prisma.course.findFirst({ where: { id: courseId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
-
-  const updated = await prisma.course.update({ where: { id: courseId }, data: parsed.data })
-  invalidateUserCache(auth.userId, ['courses'])
-  return ok(updated)
+  try {
+    const updated = await prisma.course.update({
+      where: { id: courseId, userId: auth.userId },
+      data: parsed.data,
+    })
+    invalidateUserCache(auth.userId, ['courses'])
+    return ok(updated)
+  } catch (error) {
+    if (isRecordNotFound(error)) return err('Not found', 404)
+    throw error
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ courseId: string }> }) {
@@ -43,10 +48,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ cou
   if ('error' in auth) return auth.error
   const { courseId } = await params
 
-  const existing = await prisma.course.findFirst({ where: { id: courseId, userId: auth.userId } })
-  if (!existing) return err('Not found', 404)
+  const { count } = await prisma.course.deleteMany({ where: { id: courseId, userId: auth.userId } })
+  if (!count) return err('Not found', 404)
 
-  await prisma.course.delete({ where: { id: courseId } })
   invalidateUserCache(auth.userId)
   return ok({ deleted: true })
 }
