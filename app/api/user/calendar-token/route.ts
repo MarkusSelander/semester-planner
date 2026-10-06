@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
+import { invalidateUserCache } from '@/lib/cache'
 import { randomUUID } from 'crypto'
 
 export async function GET() {
@@ -25,6 +26,7 @@ export async function POST() {
     data: { calendarToken: randomUUID() },
     select: { calendarToken: true },
   })
+  invalidateUserCache(auth.userId, ['user'])
 
   return ok({ calendarToken: user.calendarToken })
 }
