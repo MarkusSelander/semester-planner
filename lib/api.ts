@@ -19,7 +19,12 @@ export async function getAuthUserId(): Promise<{ userId: string } | { error: Nex
   if (!knownUsers.has(userId)) {
     const pending = pendingUserUpserts.get(userId)
     if (pending) {
-      await pending
+      try {
+        await pending
+      } catch (error) {
+        console.error('[getAuthUserId] user upsert failed', error)
+        return { error: NextResponse.json({ data: null, error: 'Failed to sync user' }, { status: 500 }) }
+      }
     } else {
       const upsertPromise = prisma.user
         .upsert({
@@ -30,6 +35,7 @@ export async function getAuthUserId(): Promise<{ userId: string } | { error: Nex
             email: hdrs.get('x-user-email') ?? '',
             fullName: hdrs.get('x-user-name') ?? null,
           },
+          select: { id: true },
         })
         .then(() => {
           knownUsers.add(userId)
@@ -39,7 +45,12 @@ export async function getAuthUserId(): Promise<{ userId: string } | { error: Nex
         })
 
       pendingUserUpserts.set(userId, upsertPromise)
-      await upsertPromise
+      try {
+        await upsertPromise
+      } catch (error) {
+        console.error('[getAuthUserId] user upsert failed', error)
+        return { error: NextResponse.json({ data: null, error: 'Failed to sync user' }, { status: 500 }) }
+      }
     }
   }
 

@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
 import { Copy, RefreshCw } from 'lucide-react'
 import { getBrowserTimezone, setTimezoneCookies } from '@/lib/dates'
+import { PageShell } from '@/components/layout/PageShell'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const TIMEZONES = [
   'Europe/Oslo',
@@ -96,27 +99,30 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Settings</h1>
+    <PageShell width="narrow">
+      <p className="page-kicker">Account</p>
+      <h1 className="page-title mb-8">Settings</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Profile</h2>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <section>
+          <h2 className="field-label mb-4">Profile</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+              <FieldLabel htmlFor="fullName">Full name</FieldLabel>
               <Input
+                id="fullName"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 placeholder="Your name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+              <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
               <select
+                id="timezone"
                 value={timezone}
                 onChange={e => setTimezone(e.target.value)}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                className="field-select"
               >
                 {!TIMEZONES.includes(deviceTimezone) && (
                   <option value={deviceTimezone}>{deviceTimezone} (this device)</option>
@@ -130,34 +136,42 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
                   <option value={timezone}>{timezone}</option>
                 )}
               </select>
-              <p className="mt-1.5 text-xs text-gray-500">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 Dates and times follow this timezone. It defaults to the timezone of the device you are using.
               </p>
               {timezone !== deviceTimezone && (
                 <button
                   type="button"
                   onClick={() => setTimezone(deviceTimezone)}
-                  className="mt-2 text-xs text-blue-600 hover:underline"
+                  className="mt-2 text-xs text-accent hover:underline"
                 >
                   Use this device ({deviceTimezone})
                 </button>
               )}
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="border-t border-gray-100 pt-6">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Notifications</h2>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-100 bg-gray-50">
+        <section className="border-t border-border/70 pt-6">
+          <h2 className="field-label mb-4">Appearance</h2>
+          <div className="flex items-center justify-between rounded-sm border border-border/80 bg-card px-4 py-3">
+            <p className="text-sm">Theme</p>
+            <ThemeToggle />
+          </div>
+        </section>
+
+        <section className="border-t border-border/70 pt-6">
+          <h2 className="field-label mb-4">Notifications</h2>
+          <div className="flex items-center justify-between rounded-sm border border-border/80 bg-card px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-gray-900">Email reminders</p>
-              <p className="text-xs text-gray-500 mt-0.5">Get notified before upcoming exams and assignments</p>
+              <p className="text-sm">Email reminders</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Get notified before upcoming exams and assignments</p>
             </div>
             <button
               type="button"
               onClick={() => setEmailReminders(v => !v)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                emailReminders ? 'bg-blue-600' : 'bg-gray-300'
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                emailReminders ? 'bg-accent' : 'bg-muted'
               }`}
             >
               <span
@@ -167,58 +181,53 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
               />
             </button>
           </div>
-        </div>
+        </section>
 
         <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : 'Save settings'}
+          {loading ? 'Saving…' : 'Save settings'}
         </Button>
       </form>
 
-      <div className="border-t border-gray-100 mt-8 pt-8">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-1">Calendar Subscription</h2>
-        <p className="text-xs text-gray-500 mb-4">
+      <section className="border-t border-border/70 mt-8 pt-8">
+        <h2 className="field-label mb-1">Calendar subscription</h2>
+        <p className="text-xs text-muted-foreground mb-4">
           Subscribe in Google Calendar, Apple Calendar, or Outlook — events sync automatically.
         </p>
 
         {calendarToken && (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                onClick={openWebcal}
-                className="flex-1 rounded-md bg-blue-600 text-white text-sm font-medium px-4 py-2 hover:bg-blue-700 transition-colors"
-              >
-                Subscribe in Calendar app
-              </button>
-            </div>
+            <Button onClick={openWebcal} className="w-full">
+              Subscribe in Calendar app
+            </Button>
 
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-md px-3 py-2 truncate text-gray-600">
+              <code className="flex-1 truncate rounded-sm border border-border bg-card px-3 py-2 font-mono text-xs text-muted-foreground">
                 {`${origin}/api/calendar/${calendarToken}`}
               </code>
               <button
                 onClick={copyFeedUrl}
-                className="flex-shrink-0 p-2 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                className="flex-shrink-0 rounded-sm border border-border p-2 hover:bg-muted/60"
                 title="Copy URL"
               >
-                <Copy className="h-4 w-4 text-gray-500" />
+                <Copy className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               For Google Calendar: Other calendars → From URL → paste the URL above.
             </p>
 
             <button
               onClick={regenerateToken}
               disabled={regenerating}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive"
             >
               <RefreshCw className={`h-3 w-3 ${regenerating ? 'animate-spin' : ''}`} />
               Regenerate (invalidates current URL)
             </button>
           </div>
         )}
-      </div>
-    </div>
+      </section>
+    </PageShell>
   )
 }

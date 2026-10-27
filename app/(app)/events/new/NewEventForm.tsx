@@ -98,22 +98,22 @@ export function NewEventForm({
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href="/list" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+    <div className="mx-auto w-full max-w-lg px-4 py-6 md:px-8 md:py-8">
+      <Link href="/list" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">New Event</h1>
+      <h1 className="page-title mb-6">New Event</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+          <label className="field-label">Semester</label>
           <select
             value={semesterId}
             onChange={e => {
               setSemesterId(e.target.value)
               setCourseId(firstCourseId(allCourses, e.target.value))
             }}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+            className="field-select"
             required
           >
             <option value="">Select semester...</option>
@@ -122,11 +122,11 @@ export function NewEventForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+          <label className="field-label">Course</label>
           <select
             value={courseId}
             onChange={e => setCourseId(e.target.value)}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+            className="field-select"
             required
             disabled={!semesterId}
           >
@@ -140,7 +140,7 @@ export function NewEventForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label className="field-label">Title</label>
           <Input
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -151,21 +151,21 @@ export function NewEventForm({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="field-label">Type</label>
             <select
               value={type}
               onChange={e => setType(e.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              className="field-select"
             >
               {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <label className="field-label">Priority</label>
             <select
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              className="field-select"
             >
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
@@ -173,7 +173,7 @@ export function NewEventForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="field-label">Date</label>
           <Input
             type="date"
             value={startDate}
@@ -190,13 +190,13 @@ export function NewEventForm({
             onChange={e => setIsAllDay(e.target.checked)}
             className="rounded"
           />
-          <label htmlFor="allDay" className="text-sm text-gray-700">All day</label>
+          <label htmlFor="allDay" className="text-sm">All day</label>
         </div>
 
         {!isAllDay && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start time</label>
+              <label className="field-label">Start time</label>
               <Input
                 type="time"
                 value={startTime}
@@ -204,7 +204,7 @@ export function NewEventForm({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End time (optional)</label>
+              <label className="field-label">End time (optional)</label>
               <Input
                 type="time"
                 value={endTime}
@@ -215,32 +215,32 @@ export function NewEventForm({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+          <label className="field-label">Description (optional)</label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full min-h-16 w-full resize-none rounded-sm border border-input bg-transparent px-3 py-2 text-sm focus-visible:border-ring"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location (optional)</label>
+          <label className="field-label">Location (optional)</label>
           <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Room A101" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">URL (optional)</label>
+          <label className="field-label">URL (optional)</label>
           <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." type="url" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+          <label className="field-label">Notes (optional)</label>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full min-h-16 w-full resize-none rounded-sm border border-input bg-transparent px-3 py-2 text-sm focus-visible:border-ring"
           />
         </div>
 

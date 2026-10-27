@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { BackLink } from '@/components/layout/PageHeader'
+import { PageShell } from '@/components/layout/PageShell'
 
 export default function NewSemesterPage() {
   const [name, setName] = useState('')
@@ -26,7 +27,7 @@ export default function NewSemesterPage() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      toast.success('Semester created!')
+      toast.success('Semester created')
       router.push(`/semesters/${json.data.id}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create semester')
@@ -36,31 +37,29 @@ export default function NewSemesterPage() {
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href="/semesters" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">New Semester</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <PageShell width="narrow">
+      <BackLink href="/semesters">Back</BackLink>
+      <h1 className="page-title mb-8">New semester</h1>
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Spring 2025" required />
+          <FieldLabel htmlFor="name">Name</FieldLabel>
+          <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Spring 2026" required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+          <FieldLabel htmlFor="start">Start</FieldLabel>
+          <Input id="start" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+          <FieldLabel htmlFor="end">End</FieldLabel>
+          <Input id="end" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
         </div>
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create semester'}
+            {loading ? 'Creating…' : 'Create semester'}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
         </div>
       </form>
-    </div>
+    </PageShell>
   )
 }

@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Cache the JWKS set at module level — fetched once per process, not per request.
 // createRemoteJWKSet handles key matching by kid header automatically.
 const JWKS = createRemoteJWKSet(
-  new URL('https://wqfhplpstiybpskszzxe.supabase.co/auth/v1/.well-known/jwks.json')
+  new URL(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/.well-known/jwks.json`)
 )
 
 const DEBUG_TIMING = process.env.NODE_ENV !== 'production'

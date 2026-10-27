@@ -95,30 +95,30 @@ export function ImportPdfForm({
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/semesters/${semesterId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+    <div className="mx-auto w-full max-w-lg px-4 py-6 md:px-8 md:py-8">
+      <Link href={`/semesters/${semesterId}`} className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Import PDF Schedule</h1>
-      {semesterName && <p className="text-sm text-gray-500 mb-6">{semesterName}</p>}
+      <h1 className="page-title mb-1">Import PDF Schedule</h1>
+      {semesterName && <p className="text-sm text-muted-foreground mb-6">{semesterName}</p>}
 
       <div className="space-y-6">
         {/* Course selection */}
         {courses.length > 0 && (
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Map to courses</p>
+            <p className="field-label">Map to courses</p>
             <div className="space-y-2">
               {courses.map(c => (
-                <label key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-50">
+                <label key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/80 cursor-pointer hover:bg-muted/50">
                   <input
                     type="checkbox"
                     checked={selectedCourseIds.includes(c.id)}
                     onChange={() => toggleCourse(c.id)}
                     className="rounded"
                   />
-                  <span className="text-sm text-gray-900">
-                    {c.code && <span className="font-mono text-gray-500 mr-2">{c.code}</span>}
+                  <span className="text-sm">
+                    {c.code && <span className="font-mono text-muted-foreground mr-2">{c.code}</span>}
                     {c.name}
                   </span>
                 </label>
@@ -129,27 +129,27 @@ export function ImportPdfForm({
 
         {/* File drop zone */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">PDF file</p>
+          <p className="field-label">PDF file</p>
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
               isDragActive
-                ? 'border-blue-400 bg-blue-50'
+                ? 'border-accent bg-accent/10'
                 : file
-                ? 'border-green-300 bg-green-50'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                ? 'border-done/40 bg-done/10'
+                : 'border-border hover:border-foreground/30 hover:bg-muted/40'
             }`}
           >
             <input {...getInputProps()} />
             {file ? (
-              <div className="flex items-center justify-center gap-2 text-green-700">
+              <div className="flex items-center justify-center gap-2 text-done">
                 <FileText className="h-5 w-5" />
                 <span className="text-sm font-medium">{file.name}</span>
               </div>
             ) : (
               <div>
-                <Upload className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
                   {isDragActive ? 'Drop the PDF here' : 'Drag & drop a PDF, or click to browse'}
                 </p>
               </div>
@@ -159,23 +159,23 @@ export function ImportPdfForm({
 
         {/* Result */}
         {result && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
-            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 rounded-sm border border-done/30 bg-done/10 p-4">
+            <CheckCircle2 className="h-5 w-5 text-done flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-green-800">
+              <p className="text-sm font-medium text-done">
                 {result.eventsCreated} events imported successfully
               </p>
               {result.extractionNotes && (
-                <p className="text-xs text-green-700 mt-1">{result.extractionNotes}</p>
+                <p className="mt-1 text-xs text-done">{result.extractionNotes}</p>
               )}
             </div>
           </div>
         )}
 
         {error && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="flex items-start gap-3 rounded-sm border border-destructive/30 bg-destructive/10 p-4">
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 

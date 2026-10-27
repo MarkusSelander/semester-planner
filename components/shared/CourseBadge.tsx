@@ -6,9 +6,14 @@ interface CourseBadgeProps {
 
 export function CourseBadge({ name, code, color }: CourseBadgeProps) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
-      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-      {code ?? name}
+    <span className="inline-flex min-w-0 items-center gap-2 text-sm text-foreground">
+      <span className="h-3 w-0.5 shrink-0" style={{ backgroundColor: color }} />
+      <span className="truncate">{name}</span>
+      {code && (
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+          {code}
+        </span>
+      )}
     </span>
   )
 }

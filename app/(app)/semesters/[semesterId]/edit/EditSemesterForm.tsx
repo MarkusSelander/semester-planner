@@ -58,22 +58,22 @@ export function EditSemesterForm({
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/semesters/${semesterId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+    <div className="mx-auto w-full max-w-lg px-4 py-6 md:px-8 md:py-8">
+      <Link href={`/semesters/${semesterId}`} className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Semester</h1>
+      <h1 className="page-title mb-6">Edit Semester</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label className="field-label">Name</label>
           <Input value={name} onChange={e => setName(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
+          <label className="field-label">Start date</label>
           <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
+          <label className="field-label">End date</label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
         </div>
         <div className="flex gap-3 pt-2">
@@ -83,7 +83,7 @@ export function EditSemesterForm({
             type="button"
             variant="outline"
             onClick={() => setShowDelete(true)}
-            className="ml-auto text-red-500 hover:text-red-600 hover:border-red-300"
+            className="ml-auto text-destructive hover:text-destructive hover:border-destructive/40"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete

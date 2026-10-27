@@ -2,12 +2,13 @@ import { headers } from 'next/headers'
 import { getSemester } from '@/lib/queries'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Upload, Edit, CalendarArrowDown } from 'lucide-react'
+import { Plus, Upload, Edit, CalendarArrowDown } from 'lucide-react'
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CourseBadge } from '@/components/shared/CourseBadge'
 import { formatDateOnly, formatEvent } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
+import { BackLink } from '@/components/layout/PageHeader'
+import { PageShell } from '@/components/layout/PageShell'
 
 export default async function SemesterDetailPage({ params }: { params: Promise<{ semesterId: string }> }) {
   const { semesterId } = await params
@@ -19,19 +20,18 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
   if (!semester) notFound()
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <Link href="/semesters" className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6 w-fit">
-        <ArrowLeft className="h-4 w-4" /> All semesters
-      </Link>
+    <PageShell width="wide">
+      <BackLink href="/semesters">All semesters</BackLink>
 
-      <div className="flex items-start justify-between mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{semester.name}</h1>
-          <p className="text-sm text-slate-500 mt-1 tabular-nums">
+          <p className="page-kicker">Semester</p>
+          <h1 className="page-title">{semester.name}</h1>
+          <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground">
             {formatDateOnly(semester.startDate, 'd MMM yyyy')} – {formatDateOnly(semester.endDate, 'd MMM yyyy')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <ButtonAnchor
             href={`/api/export/ics?semesterId=${semesterId}`}
             download
@@ -52,71 +52,65 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Courses */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Courses</CardTitle>
-              <ButtonLink href={`/courses/new?semesterId=${semesterId}`} size="sm" variant="outline">
-                <Plus className="h-3 w-3 mr-1" />
-                Add
-              </ButtonLink>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="rounded-sm border border-border/80 bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-lg">Courses</h2>
+            <ButtonLink href={`/courses/new?semesterId=${semesterId}`} size="sm" variant="outline">
+              <Plus className="h-3 w-3 mr-1" />
+              Add
+            </ButtonLink>
+          </div>
+          {semester.courses.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">No courses yet</p>
+          ) : (
+            <div className="space-y-1">
+              {semester.courses.map(course => (
+                <Link
+                  key={course.id}
+                  href={`/courses/${course.id}`}
+                  className="flex items-center justify-between rounded-sm px-2 py-2 hover:bg-muted/50"
+                >
+                  <CourseBadge name={course.name} code={course.code} color={course.color} />
+                  <span className="font-mono text-[11px] text-muted-foreground">{course._count.events} events</span>
+                </Link>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            {semester.courses.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No courses yet</p>
-            ) : (
-              <div className="space-y-2">
-                {semester.courses.map(course => (
-                  <Link
-                    key={course.id}
-                    href={`/courses/${course.id}`}
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    <CourseBadge name={course.name} code={course.code} color={course.color} />
-                    <span className="text-xs text-gray-400">{course._count.events} events</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </section>
 
-        {/* Upcoming events */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Upcoming Events</CardTitle>
-              <Link href={`/list?semesterId=${semesterId}`} className="text-sm text-blue-600 hover:underline">
-                View all
-              </Link>
+        <section className="rounded-sm border border-border/80 bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-lg">Upcoming events</h2>
+            <Link href={`/list?semesterId=${semesterId}`} className="text-xs text-accent hover:underline">
+              View all
+            </Link>
+          </div>
+          {semester.events.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">No upcoming events</p>
+          ) : (
+            <div className="space-y-1">
+              {semester.events.map(event => (
+                <Link
+                  key={event.id}
+                  href={`/events/${event.id}`}
+                  className="flex items-start gap-3 rounded-sm px-2 py-2 hover:bg-muted/50"
+                >
+                  <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: event.course.color }} />
+                  <div>
+                    <p className="text-sm">{event.title}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">
+                      {event.isAllDay
+                        ? formatEvent(event.startAt, 'd MMM', timeZone, true)
+                        : formatEvent(event.startAt, 'd MMM · HH:mm', timeZone)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            {semester.events.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No upcoming events</p>
-            ) : (
-              <div className="space-y-2">
-                {semester.events.map(event => (
-                  <Link
-                    key={event.id}
-                    href={`/events/${event.id}`}
-                    className="flex items-start gap-3 p-2 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="h-2 w-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: event.course.color }} />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{event.title}</p>
-                      <p className="text-xs text-gray-500">{event.isAllDay ? formatEvent(event.startAt, 'd MMM', timeZone, true) : formatEvent(event.startAt, 'd MMM · HH:mm', timeZone)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </section>
       </div>
-    </div>
+    </PageShell>
   )
 }

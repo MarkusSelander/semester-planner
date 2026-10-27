@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -29,46 +30,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-8 space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
-        <p className="mt-1 text-sm text-gray-500">Welcome back to Semester Planner</p>
+        <p className="page-kicker">Semester planner</p>
+        <h1 className="page-title">Sign in</h1>
       </div>
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="you@example.com"
+            placeholder="you@university.edu"
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
+          <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            placeholder="••••••••"
           />
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-      <p className="text-center text-sm text-gray-500">
-        Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-blue-600 hover:underline font-medium">
-          Sign up
+      <p className="text-sm text-muted-foreground">
+        No account?{' '}
+        <Link href="/signup" className="text-foreground underline-offset-4 hover:underline">
+          Create one
         </Link>
       </p>
     </div>

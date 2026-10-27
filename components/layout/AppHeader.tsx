@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
-import { CalendarDays, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
+import { Settings } from 'lucide-react'
 import { OverdueAlert } from '@/components/layout/OverdueAlert'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { getOverdueEvents } from '@/lib/queries'
 
 async function OverdueStatus({ userId, timeZone }: { userId: string; timeZone: string }) {
@@ -8,10 +10,7 @@ async function OverdueStatus({ userId, timeZone }: { userId: string; timeZone: s
 
   if (overdue.length === 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        All caught up
-      </span>
+      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-done">Caught up</span>
     )
   }
 
@@ -28,15 +27,29 @@ export function AppHeader({
   timeZone: string
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <CalendarDays className="h-4 w-4 text-slate-400" />
-        <span className="text-sm font-medium text-slate-700">{today}</span>
+    <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 md:px-6">
+      <div className="min-w-0 md:hidden">
+        <Link href="/dashboard" className="font-heading text-base tracking-tight">
+          Semester
+        </Link>
       </div>
+      <p className="hidden font-mono text-xs tabular-nums text-muted-foreground md:block">{today}</p>
 
-      <Suspense fallback={<span className="h-6 w-36 animate-pulse rounded-full bg-slate-100" aria-hidden />}>
-        <OverdueStatus userId={userId} timeZone={timeZone} />
-      </Suspense>
+      <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center md:hidden">
+          <ThemeToggle compact />
+          <Link
+            href="/settings"
+            className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label="Settings"
+          >
+            <Settings className="h-4 w-4" strokeWidth={1.75} />
+          </Link>
+        </div>
+        <Suspense fallback={<span className="h-4 w-24 animate-pulse bg-muted" aria-hidden />}>
+          <OverdueStatus userId={userId} timeZone={timeZone} />
+        </Suspense>
+      </div>
     </header>
   )
 }

@@ -61,30 +61,30 @@ export function EditCourseForm({
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href={`/courses/${courseId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+    <div className="mx-auto w-full max-w-lg px-4 py-6 md:px-8 md:py-8">
+      <Link href={`/courses/${courseId}`} className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Course</h1>
+      <h1 className="page-title mb-6">Edit Course</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course name</label>
+          <label className="field-label">Course name</label>
           <Input value={name} onChange={e => setName(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course code (optional)</label>
+          <label className="field-label">Course code (optional)</label>
           <Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. TDT4120" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+          <label className="field-label">Color</label>
           <div className="flex gap-2">
             {COLORS.map(c => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                className={`h-7 w-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-foreground/40 scale-110' : ''}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -97,7 +97,7 @@ export function EditCourseForm({
             type="button"
             variant="outline"
             onClick={() => setShowDelete(true)}
-            className="ml-auto text-red-500 hover:text-red-600 hover:border-red-300"
+            className="ml-auto text-destructive hover:text-destructive hover:border-destructive/40"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete

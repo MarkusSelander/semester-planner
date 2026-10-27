@@ -9,12 +9,12 @@ export default function Error({ error }: { error: Error & { digest?: string } })
   }, [error])
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h2 className="text-lg font-bold text-red-600 mb-2">Runtime Error</h2>
-      <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto whitespace-pre-wrap">
+    <div className="mx-auto max-w-lg px-4 py-16">
+      <p className="page-kicker">Error</p>
+      <h2 className="page-title">Something broke.</h2>
+      <p className="mt-3 text-sm text-muted-foreground">Reload the page. If it persists, check the console.</p>
+      <pre className="mt-6 overflow-auto border border-border bg-muted/40 p-4 font-mono text-xs whitespace-pre-wrap text-muted-foreground">
         {error.message}
-        {'\n\n'}
-        {error.stack}
       </pre>
     </div>
   )

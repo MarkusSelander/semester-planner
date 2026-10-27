@@ -2,8 +2,12 @@ import { headers } from 'next/headers'
 import { getCourses } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, BookOpen, ChevronRight } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { BookOpen } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { PageShell } from '@/components/layout/PageShell'
 
 export default async function CoursesPage() {
   const hdrs = await headers()
@@ -12,7 +16,6 @@ export default async function CoursesPage() {
 
   const courses = await getCourses(userId)
 
-  // Group by semester
   const bySemester: Record<string, { semesterName: string; courses: typeof courses }> = {}
   for (const course of courses) {
     const key = course.semester.name
@@ -22,64 +25,54 @@ export default async function CoursesPage() {
   const semesterGroups = Object.values(bySemester)
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{courses.length} courses across {semesterGroups.length} semesters</p>
-        </div>
-        <ButtonLink href="/courses/new">
-          <Plus className="h-4 w-4 mr-1.5" />
-          New course
-        </ButtonLink>
-      </div>
+    <PageShell width="wide">
+      <PageHeader
+        kicker="Library"
+        title="Courses"
+        description={`${courses.length} across ${semesterGroups.length} ${semesterGroups.length === 1 ? 'semester' : 'semesters'}`}
+        actions={
+          <ButtonLink href="/courses/new" size="sm">
+            <Plus className="h-4 w-4" strokeWidth={1.75} />
+            New course
+          </ButtonLink>
+        }
+      />
 
       {courses.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="h-6 w-6 text-slate-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-700 mb-1">No courses yet</p>
-          <p className="text-xs text-slate-400 mb-4">Add your first course to start organizing events.</p>
-          <ButtonLink href="/courses/new">Add course</ButtonLink>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="No courses"
+          description="Add a course to start hanging events on it."
+          actionLabel="Add course"
+          actionHref="/courses/new"
+        />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {semesterGroups.map(({ semesterName, courses: semCourses }) => (
-            <div key={semesterName}>
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{semesterName}</h2>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section key={semesterName}>
+              <h2 className="page-kicker">{semesterName}</h2>
+              <ul className="divide-y divide-border border-t border-border">
                 {semCourses.map(course => (
-                  <Link
-                    key={course.id}
-                    href={`/courses/${course.id}`}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div
-                      className="h-8 w-8 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: course.color + '20', border: `2px solid ${course.color}40` }}
+                  <li key={course.id}>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="flex items-center gap-4 py-3.5 transition-colors duration-200 ease-out-quart hover:text-primary"
                     >
-                      <div className="h-full w-full flex items-center justify-center">
-                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: course.color }} />
+                      <span className="h-6 w-0.5 shrink-0" style={{ backgroundColor: course.color }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{course.name}</p>
+                        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                          {course.code ? `${course.code} · ` : ''}{course._count.events} events
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{course.name}</p>
-                        {course.code && (
-                          <span className="text-xs text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{course.code}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{course._count.events} events</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-400 transition-colors flex-shrink-0" />
-                  </Link>
+                    </Link>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

@@ -45,29 +45,30 @@ export function EventActions({ eventId, isDone }: { eventId: string; isDone: boo
   }
 
   return (
-    <div className="flex gap-2 flex-shrink-0">
+    <div className="flex shrink-0 gap-2">
       <Button
         variant="outline"
         size="sm"
         onClick={toggleDone}
         aria-pressed={done}
-        className={done ? 'text-green-600 border-green-200 hover:text-green-700' : ''}
+        className={done ? 'text-done' : ''}
       >
         {done
-          ? <CheckCircle2 className="h-4 w-4 mr-1 text-green-600" />
-          : <Circle className="h-4 w-4 mr-1" />}
+          ? <CheckCircle2 className="mr-1 h-4 w-4 text-done" strokeWidth={1.75} />
+          : <Circle className="mr-1 h-4 w-4" strokeWidth={1.75} />}
         {done ? 'Done' : 'Mark done'}
       </Button>
-      <ButtonLink href={`/events/${eventId}/edit`} variant="outline" size="sm">
-        <Edit className="h-4 w-4" />
+      <ButtonLink href={`/events/${eventId}/edit`} variant="outline" size="sm" aria-label="Edit event">
+        <Edit className="h-4 w-4" strokeWidth={1.75} />
       </ButtonLink>
       <Button
         variant="outline"
         size="sm"
         onClick={() => setShowDelete(true)}
-        className="text-red-500 hover:text-red-600 hover:border-red-300"
+        className="text-overdue"
+        aria-label="Delete event"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="h-4 w-4" strokeWidth={1.75} />
       </Button>
       <ConfirmDialog
         open={showDelete}

@@ -3,34 +3,12 @@
 import { useState } from 'react'
 import Link, { useLinkStatus } from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { Loader2, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { TIMEZONE_PERSISTED_KEY } from '@/lib/dates'
-import {
-  LayoutDashboard,
-  ListChecks,
-  CalendarDays,
-  GitBranch,
-  GraduationCap,
-  BookOpen,
-  Settings,
-  LogOut,
-  BookMarked,
-  Loader2,
-} from 'lucide-react'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/timeline', label: 'Timeline', icon: GitBranch },
-  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { href: '/list', label: 'Events', icon: ListChecks },
-]
-
-const resourceItems = [
-  { href: '/semesters', label: 'Semesters', icon: GraduationCap },
-  { href: '/courses', label: 'Courses', icon: BookOpen },
-  { href: '/settings', label: 'Settings', icon: Settings },
-]
+import { ThemeToggle } from '@/components/theme-toggle'
+import { navIsActive, primaryNav, resourceNav, type NavItem } from './nav-items'
 
 function PendingHint() {
   const { pending } = useLinkStatus()
@@ -43,29 +21,19 @@ function PendingHint() {
   )
 }
 
-function NavLink({
-  href,
-  label,
-  icon: Icon,
-  active,
-}: {
-  href: string
-  label: string
-  icon: typeof LayoutDashboard
-  active: boolean
-}) {
+function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+        'flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm transition-colors duration-200 ease-out-quart',
         active
-          ? 'bg-indigo-600 text-white'
-          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+          ? 'border-primary font-medium text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground',
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
       {label}
       <PendingHint />
     </Link>
@@ -76,10 +44,6 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
-
-  function isActive(href: string) {
-    return pathname === href || pathname.startsWith(href + '/')
-  }
 
   async function signOut() {
     setSigningOut(true)
@@ -97,42 +61,40 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-56 shrink-0 bg-slate-900 flex flex-col h-full">
-      {/* Logo */}
-      <div className="px-4 py-5 flex items-center gap-2.5">
-        <div className="h-7 w-7 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
-          <BookMarked className="h-4 w-4 text-white" />
-        </div>
-        <span className="font-semibold text-white text-sm tracking-tight">Semester Planner</span>
+    <aside className="hidden h-full w-52 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+      <div className="px-4 py-5">
+        <Link href="/dashboard" className="block">
+          <p className="font-heading text-lg leading-none tracking-tight text-foreground">Semester</p>
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Planner</p>
+        </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-        {navItems.map(item => (
-          <NavLink key={item.href} {...item} active={isActive(item.href)} />
+      <nav className="flex-1 overflow-y-auto px-2 pb-4">
+        {primaryNav.map(item => (
+          <NavLink key={item.href} {...item} active={navIsActive(pathname, item.href)} />
         ))}
 
-        <div className="pt-5 pb-1.5 px-3">
-          <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Manage</p>
-        </div>
+        <p className="mt-6 mb-1 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          Library
+        </p>
 
-        {resourceItems.map(item => (
-          <NavLink key={item.href} {...item} active={isActive(item.href)} />
+        {resourceNav.map(item => (
+          <NavLink key={item.href} {...item} active={navIsActive(pathname, item.href)} />
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-2 py-3 border-t border-slate-800">
+      <div className="space-y-1 border-t border-border px-2 py-3">
+        <ThemeToggle />
         <button
           type="button"
           onClick={signOut}
           disabled={signingOut}
-          className="flex w-full items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors disabled:opacity-60"
+          className="flex w-full items-center gap-2.5 px-2 py-2 text-sm text-muted-foreground transition-colors duration-200 ease-out-quart hover:text-foreground disabled:opacity-60"
         >
           {signingOut
-            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            : <LogOut className="h-4 w-4 shrink-0" />}
-          {signingOut ? 'Signing out...' : 'Sign out'}
+            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" strokeWidth={1.75} />
+            : <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />}
+          {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       </div>
     </aside>
