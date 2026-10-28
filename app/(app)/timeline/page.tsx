@@ -9,6 +9,8 @@ import { HandInTag, TypeBadge, isActionRequired } from '@/components/event-type'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
 import { DateRail } from '@/components/layout/DateRail'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { GitBranch } from 'lucide-react'
 
 export default async function TimelinePage() {
   const userId = (await headers()).get('x-user-id')
@@ -35,7 +37,13 @@ export default async function TimelinePage() {
       <PageHeader kicker="Year" title="Timeline" />
 
       {monthKeys.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">No events yet.</p>
+        <EmptyState
+          icon={GitBranch}
+          title="No events yet"
+          description="Add a lecture, deadline or exam to see the year unfold."
+          actionLabel="Add event"
+          actionHref="/events/new"
+        />
       ) : (
         <div className="space-y-12">
           {monthKeys.map(monthKey => {

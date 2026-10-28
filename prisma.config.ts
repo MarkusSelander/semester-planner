@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // CLI/migrate need a session or direct connection (port 5432).
+    // Prisma Client runtime uses DATABASE_URL (transaction pooler 6543) in lib/prisma.ts.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

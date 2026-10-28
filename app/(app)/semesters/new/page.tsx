@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 import { BackLink } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
 
@@ -54,8 +55,8 @@ export default function NewSemesterPage() {
           <Input id="end" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
         </div>
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Creating…' : 'Create semester'}
+          <Button type="submit" disabled={loading} aria-busy={loading}>
+            {loading ? <><InlineSpinner className="mr-1" /> Creating…</> : 'Create semester'}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
         </div>

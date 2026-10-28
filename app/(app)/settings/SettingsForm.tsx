@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 import { Copy, RefreshCw } from 'lucide-react'
 import { getBrowserTimezone, setTimezoneCookies } from '@/lib/dates'
 import { PageShell } from '@/components/layout/PageShell'
@@ -183,8 +184,8 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
           </div>
         </section>
 
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving…' : 'Save settings'}
+        <Button type="submit" disabled={loading} aria-busy={loading}>
+          {loading ? <><InlineSpinner className="mr-1" /> Saving…</> : 'Save settings'}
         </Button>
       </form>
 

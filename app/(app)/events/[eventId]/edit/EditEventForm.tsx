@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 import { BackLink } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
 import {
@@ -161,7 +162,7 @@ export function EditEventForm({ event, timeZone }: { event: EditableEvent; timeZ
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Save changes'}</Button>
+          <Button type="submit" disabled={loading} aria-busy={loading}>{loading ? <><InlineSpinner className="mr-1" /> Saving…</> : 'Save changes'}</Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
         </div>
       </form>

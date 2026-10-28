@@ -17,6 +17,9 @@ import { HandInTag, TypeBadge, isActionRequired } from '@/components/event-type'
 import { BackLink } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
 import { DateRail } from '@/components/layout/DateRail'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { ProgressBar } from '@/components/shared/SemesterProgress'
+import { CalendarDays } from 'lucide-react'
 
 function eventStatus(event: { isDone: boolean; startAt: Date }, timeZone: string) {
   if (event.isDone) return { label: 'Done', cls: 'text-done' }
@@ -36,6 +39,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
 
   const now = new Date()
   const overdueEvents = course.events.filter(event => event.startAt < now && !event.isDone)
+  const doneCount = course.events.filter(event => event.isDone).length
 
   const eventsByMonth = course.events.reduce<Record<string, typeof course.events>>((acc, event) => {
     const key = monthKeyFor(event.startAt, timeZone, event.isAllDay)
@@ -59,6 +63,13 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
               {course.code && <span className="mr-2 uppercase tracking-[0.08em]">{course.code}</span>}
               {course.semester.name}
             </p>
+            {course.events.length > 0 && (
+              <ProgressBar
+                className="mt-3 max-w-xs"
+                ratio={doneCount / course.events.length}
+                label={`${doneCount}/${course.events.length} done`}
+              />
+            )}
           </div>
         </div>
         <ButtonLink href={`/courses/${courseId}/edit`} variant="outline" size="sm">
@@ -82,7 +93,13 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
       )}
 
       {course.events.length === 0 ? (
-        <p className="py-12 text-sm text-muted-foreground">No events on this course yet.</p>
+        <EmptyState
+          icon={CalendarDays}
+          title="No events yet"
+          description="Add a lecture or deadline to this course."
+          actionLabel="Add event"
+          actionHref={`/events/new?courseId=${courseId}`}
+        />
       ) : (
         <div className="space-y-10">
           {monthKeys.map(monthKey => (

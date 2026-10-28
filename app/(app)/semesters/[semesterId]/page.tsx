@@ -9,6 +9,7 @@ import { formatDateOnly, formatEvent } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
 import { BackLink } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
+import { SemesterProgress } from '@/components/shared/SemesterProgress'
 
 export default async function SemesterDetailPage({ params }: { params: Promise<{ semesterId: string }> }) {
   const { semesterId } = await params
@@ -30,6 +31,7 @@ export default async function SemesterDetailPage({ params }: { params: Promise<{
           <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground">
             {formatDateOnly(semester.startDate, 'd MMM yyyy')} – {formatDateOnly(semester.endDate, 'd MMM yyyy')}
           </p>
+          <SemesterProgress startDate={semester.startDate} endDate={semester.endDate} className="mt-3 max-w-xs" />
         </div>
         <div className="flex flex-wrap gap-2">
           <ButtonAnchor

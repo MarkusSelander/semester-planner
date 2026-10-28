@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUserId, ok, err } from '@/lib/api'
-import { getUserProfile } from '@/lib/queries'
+import { getUserProfile, userProfileSelect } from '@/lib/queries'
 import { invalidateUserCache } from '@/lib/cache'
 import { z } from 'zod'
 
@@ -32,6 +32,7 @@ export async function PUT(req: NextRequest) {
     where: { id: auth.userId },
     update: parsed.data,
     create: { id: auth.userId, email: '', ...parsed.data },
+    select: userProfileSelect,
   })
   invalidateUserCache(auth.userId, ['user'])
   return ok(user)

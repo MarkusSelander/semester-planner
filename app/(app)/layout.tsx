@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader today={today} userId={userId} timeZone={timeZone} />
-        <main className="min-h-0 flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto pb-20 md:pb-0">{children}</main>
       </div>
       <MobileNav />
     </div>

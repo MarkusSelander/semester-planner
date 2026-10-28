@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldLabel } from '@/components/ui/field'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -43,7 +44,7 @@ export default function SignupPage() {
         <p className="page-kicker">Semester planner</p>
         <h1 className="page-title">Create account</h1>
       </div>
-      <form onSubmit={handleSignup} className="space-y-4">
+      <form onSubmit={handleSignup} className="space-y-4" aria-busy={loading}>
         <div>
           <FieldLabel htmlFor="name">Full name</FieldLabel>
           <Input
@@ -78,7 +79,7 @@ export default function SignupPage() {
           />
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Creating…' : 'Create account'}
+          {loading ? <><InlineSpinner className="mr-1" /> Creating…</> : 'Create account'}
         </Button>
       </form>
       <p className="text-sm text-muted-foreground">

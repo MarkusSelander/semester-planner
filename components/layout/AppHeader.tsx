@@ -40,13 +40,13 @@ export function AppHeader({
           <ThemeToggle compact />
           <Link
             href="/settings"
-            className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground"
+            className="inline-flex size-11 items-center justify-center text-muted-foreground transition-colors duration-[var(--duration-micro)] ease-out-quart hover:text-foreground md:size-8"
             aria-label="Settings"
           >
             <Settings className="h-4 w-4" strokeWidth={1.75} />
           </Link>
         </div>
-        <Suspense fallback={<span className="h-4 w-24 animate-pulse bg-muted" aria-hidden />}>
+        <Suspense fallback={<span className="skeleton-shimmer h-4 w-24 rounded-sm bg-muted" aria-hidden />}>
           <OverdueStatus userId={userId} timeZone={timeZone} />
         </Suspense>
       </div>

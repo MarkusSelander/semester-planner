@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getAuthUserId } from '@/lib/api'
 import { prisma } from '@/lib/prisma'
-import { getUserProfile } from '@/lib/queries'
+import { getUserProfile, userProfileSelect } from '@/lib/queries'
 import { SettingsForm } from './SettingsForm'
 
 export default async function SettingsPage() {
@@ -14,7 +14,7 @@ export default async function SettingsPage() {
     // First visit before any API call created the row. Bypass the cached
     // (null) profile after creating it.
     await getAuthUserId()
-    profile = await prisma.user.findUnique({ where: { id: userId } })
+    profile = await prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect })
   }
 
   return (

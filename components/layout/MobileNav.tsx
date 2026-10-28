@@ -21,7 +21,7 @@ export function MobileNav() {
               <Link
                 href={href}
                 className={cn(
-                  'flex flex-col items-center gap-1 rounded-sm px-1 py-1.5 text-[10px] tracking-wide uppercase font-mono transition-colors duration-200 ease-out-quart',
+                  'flex min-h-11 flex-col items-center justify-center gap-1 rounded-sm px-1 py-2 text-[10px] tracking-wide uppercase font-mono transition-[color,transform] duration-[var(--duration-micro)] ease-out-quart active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >

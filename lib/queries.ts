@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import type { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 import { TAGS, cachedQuery, toDate } from './cache'
 
@@ -450,7 +451,7 @@ export const getTimelineEvents = cache((userId: string, limit = 500) =>
 
 export const getCourse = cache(async (userId: string, courseId: string) => {
   const course = await cachedQuery(
-    [`course:${userId}:${courseId}`],
+    [`course:${userId}:${courseId}:500`],
     [TAGS.courses(userId), TAGS.events(userId), TAGS.semesters(userId)],
     30,
     () =>
@@ -465,6 +466,7 @@ export const getCourse = cache(async (userId: string, courseId: string) => {
             semester: { select: { id: true, name: true } },
             events: {
               orderBy: { startAt: 'asc' },
+              take: 500,
               select: {
                 id: true,
                 title: true,
@@ -604,24 +606,33 @@ export const getCalendarEvents = cache((userId: string): Promise<CalendarEvent[]
   )
 )
 
+export const userProfileSelect = {
+  id: true,
+  fullName: true,
+  timezone: true,
+  emailReminders: true,
+  calendarToken: true,
+} satisfies Prisma.UserSelect
+
 export const getUserProfile = cache((userId: string) =>
   cachedQuery(
-    [`user:${userId}`],
+    [`user:profile:${userId}`],
     [TAGS.user(userId)],
     60,
-    () => prisma.user.findUnique({ where: { id: userId } })
+    () => prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect })
   )
 )
 
 export const getCourseEvents = cache((userId: string, courseId: string) =>
   cachedQuery(
-    [`events:course:${userId}:${courseId}`],
+    [`events:course:${userId}:${courseId}:500`],
     [TAGS.events(userId)],
     30,
     () =>
       prisma.event.findMany({
         where: { courseId, userId },
         orderBy: { startAt: 'asc' },
+        take: 500,
         select: {
           id: true,
           title: true,

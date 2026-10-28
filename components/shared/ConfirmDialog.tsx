@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -45,7 +46,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading ? 'Deleting...' : 'Confirm'}
+            {loading ? <><InlineSpinner className="mr-1" /> Deleting…</> : 'Confirm'}
           </Button>
         </DialogFooter>
       </DialogContent>

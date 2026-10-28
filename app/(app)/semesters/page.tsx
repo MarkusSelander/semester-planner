@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDateOnly } from '@/lib/dates'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
+import { SemesterProgress } from '@/components/shared/SemesterProgress'
 
 export default async function SemestersPage() {
   const hdrs = await headers()
@@ -42,7 +43,7 @@ export default async function SemestersPage() {
         <ul className="divide-y divide-border border-t border-border">
           {semesters.map(semester => (
             <li key={semester.id} className="flex flex-wrap items-start justify-between gap-4 py-5">
-              <Link href={`/semesters/${semester.id}`} className="min-w-0 flex-1 hover:text-primary">
+              <Link href={`/semesters/${semester.id}`} className="min-w-0 flex-1 rounded-sm py-1 transition-colors duration-[var(--duration-micro)] ease-out-quart hover:text-primary">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h2 className="font-heading text-xl tracking-tight">{semester.name}</h2>
                   {semester.isActive && (
@@ -55,6 +56,7 @@ export default async function SemestersPage() {
                 <p className="mt-2 font-mono text-[11px] text-muted-foreground">
                   {semester._count.courses} courses · {semester._count.events} events
                 </p>
+                <SemesterProgress startDate={semester.startDate} endDate={semester.endDate} className="mt-3 max-w-xs" />
                 {semester.courses.length > 0 && (
                   <div className="mt-3 flex gap-1">
                     {semester.courses.map((c: { id: string; color: string }) => (

@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Database (Supabase + Prisma)
+
+Runtime (`lib/prisma.ts`) reads `DATABASE_URL`. Prisma CLI/migrate (`prisma.config.ts`) reads `DIRECT_URL`, then falls back to `DATABASE_URL`.
+
+| Env | Port | Used by |
+| --- | --- | --- |
+| `DATABASE_URL` | `6543` + `pgbouncer=true` | App / Vercel functions (transaction pooler) |
+| `DIRECT_URL` | `5432` (session or direct) | `prisma migrate` |
+
+Local Postgres can set both to `localhost:5432`. Copy `.env.example` for the full list.
+
+**Check before changing production env**
+
+- Current local `DATABASE_URL` already uses the Tokyo pooler (`aws-1-ap-northeast-1`, port `6543`).
+- Current `DIRECT_URL` is a copy of that pooler URL (also `6543`). Replace it with the session/direct string on port `5432` before relying on migrate.
+- `vercel.json` has no `regions`. Vercel functions default to `iad1` (Washington). The database is in `ap-northeast-1` (Tokyo / Vercel `hnd1`). Align function region with the database, or move the Supabase project closer to users (`fra1` / `eu-central-1` for Norway). Confirm the dashboard setting before changing env or `vercel.json`.
+
 ## Getting Started
 
 First, run the development server:

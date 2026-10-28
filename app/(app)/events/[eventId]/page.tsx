@@ -6,7 +6,7 @@ import { MapPin, ExternalLink } from 'lucide-react'
 import { isBefore } from 'date-fns'
 import { formatEvent, isTodayTz } from '@/lib/dates'
 import { getRequestTimezone } from '@/lib/dates.server'
-import { EventActions } from './EventActions'
+import { EventActions, EventDoneCompleted, EventDoneScope, EventDoneStatus, EventDoneTitle } from './EventActions'
 import { HandInTag, TypeBadge } from '@/components/event-type'
 import { BackLink } from '@/components/layout/PageHeader'
 import { PageShell } from '@/components/layout/PageShell'
@@ -35,8 +35,13 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
 
   const status = eventStatus(event, timeZone)
 
+  const completedText = event.doneAt
+    ? `Completed ${formatEvent(event.doneAt, 'd MMM yyyy', timeZone)}`
+    : null
+
   return (
     <PageShell width="wide">
+      <EventDoneScope key={`${eventId}:${event.isDone}`} isDone={event.isDone}>
       <BackLink href="/list">All events</BackLink>
 
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
@@ -45,11 +50,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
             <TypeBadge type={event.type} />
             <HandInTag type={event.type} />
             <span>{priorityLabel[event.priority] ?? event.priority} priority</span>
-            <span className={status.cls}>{status.label}</span>
+            <EventDoneStatus whenOpen={status} />
           </p>
-          <h1 className={`page-title mt-1 ${event.isDone ? 'text-muted-foreground line-through' : ''}`}>
-            {event.title}
-          </h1>
+          <EventDoneTitle>{event.title}</EventDoneTitle>
           <p className="mt-3 font-mono text-xs text-muted-foreground">
             <Link href={`/courses/${event.course.id}`} className="hover:text-foreground">
               {event.course.code ?? event.course.name}
@@ -60,7 +63,23 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
             </Link>
           </p>
         </div>
-        <EventActions eventId={eventId} isDone={event.isDone} />
+        <EventActions
+          eventId={eventId}
+          snapshot={{
+            courseId: event.courseId ?? event.course.id,
+            semesterId: event.semesterId ?? event.semester.id,
+            title: event.title,
+            description: event.description,
+            type: String(event.type),
+            startAt: event.startAt.toISOString(),
+            endAt: event.endAt?.toISOString() ?? null,
+            isAllDay: event.isAllDay,
+            priority: String(event.priority),
+            location: event.location,
+            url: event.url,
+            notes: event.notes,
+          }}
+        />
       </header>
 
       <div className="grid grid-cols-1 gap-10 xl:grid-cols-12">
@@ -74,11 +93,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
               {event.endAt && !event.isAllDay && `–${formatEvent(event.endAt, 'HH:mm', timeZone)}`}
               {event.isAllDay && <span className="ml-2 font-sans text-base text-muted-foreground">All day</span>}
             </p>
-            {event.isDone && event.doneAt && (
-              <p className="mt-2 font-mono text-xs text-done">
-                Completed {formatEvent(event.doneAt, 'd MMM yyyy', timeZone)}
-              </p>
-            )}
+            <EventDoneCompleted text={completedText} />
           </section>
 
           {event.description && (
@@ -121,6 +136,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
           )}
         </aside>
       </div>
+      </EventDoneScope>
     </PageShell>
   )
 }

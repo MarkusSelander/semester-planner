@@ -56,7 +56,7 @@ export default async function CoursesPage() {
                   <li key={course.id}>
                     <Link
                       href={`/courses/${course.id}`}
-                      className="flex items-center gap-4 py-3.5 transition-colors duration-200 ease-out-quart hover:text-primary"
+                      className="-mx-2 flex min-h-11 items-center gap-4 rounded-sm px-2 py-3.5 transition-colors duration-[var(--duration-micro)] ease-out-quart hover:bg-muted/60 hover:text-primary"
                     >
                       <span className="h-6 w-0.5 shrink-0" style={{ backgroundColor: course.color }} />
                       <div className="min-w-0 flex-1">

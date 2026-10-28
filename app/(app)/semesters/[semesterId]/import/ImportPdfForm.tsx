@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 import Link from 'next/link'
 import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react'
 
@@ -180,8 +181,8 @@ export function ImportPdfForm({
         )}
 
         <div className="flex gap-3">
-          <Button onClick={handleImport} disabled={loading || !file}>
-            {loading ? 'Importing...' : 'Import'}
+          <Button onClick={handleImport} disabled={loading || !file} aria-busy={loading}>
+            {loading ? <><InlineSpinner className="mr-1" /> Importing…</> : 'Import'}
           </Button>
           {result && (
             <Button variant="outline" onClick={() => router.push(`/semesters/${semesterId}`)}>

@@ -5,6 +5,8 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Serverless runtime: use the transaction pooler (port 6543, pgbouncer=true).
+// Prisma CLI/migrate uses DIRECT_URL (port 5432) via prisma.config.ts.
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 
 export const prisma =

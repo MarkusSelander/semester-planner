@@ -1,13 +1,15 @@
 'use client'
 
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckCircle2, Circle, CalendarArrowDown } from 'lucide-react'
+import { Plus, CheckCircle2, Circle, CalendarArrowDown, ListChecks } from 'lucide-react'
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button'
 import { isBefore } from 'date-fns'
 import { toast } from 'sonner'
 import type { ListEvent } from '@/lib/queries'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { cn } from '@/lib/utils'
 import {
   calendarDayKey,
   dateLabel,
@@ -55,42 +57,75 @@ function rowDisplay(ev: ListEvent, timeZone: string, now: Date): RowDisplay {
 const EventRow = memo(function EventRow({
   ev,
   isDone,
+  exiting,
   display,
   onToggle,
 }: {
   ev: ListEvent
   isDone: boolean
+  exiting: boolean
   display: RowDisplay
   onToggle: (id: string) => void
 }) {
   const status = isDone ? 'Done' : display.baseStatus
   const emphasize = isActionRequired(ev.type)
   return (
-    <DateRail day={display.day} time={display.time} muted={isDone}>
-      <div className="flex items-start gap-3">
-        <button
-          onClick={() => onToggle(ev.id)}
-          aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
-          className="mt-0.5 text-muted-foreground transition-colors duration-200 ease-out-quart hover:text-done"
-        >
-          {isDone
-            ? <CheckCircle2 className="h-4 w-4 text-done" strokeWidth={1.75} />
-            : <Circle className="h-4 w-4" strokeWidth={1.75} />}
-        </button>
-        <Link href={`/events/${ev.id}`} className="min-w-0 flex-1">
-          <p className={`truncate text-sm ${isDone ? 'text-muted-foreground line-through' : emphasize ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-            {ev.title}
-          </p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[11px] text-muted-foreground">
-            <span className="inline-block h-2.5 w-0.5" style={{ backgroundColor: ev.course.color }} />
-            <span>{ev.course.code ?? ev.course.name}</span>
-            <TypeBadge type={ev.type} />
-            {!isDone && <HandInTag type={ev.type} />}
-            <span className={STATUS_CLS[status]}>{status}</span>
-          </p>
-        </Link>
+    <div
+      className={cn(
+        'grid transition-[grid-template-rows,opacity,transform] duration-[var(--duration-large)] ease-out-quart',
+        exiting ? 'grid-rows-[0fr] -translate-y-1 opacity-0' : 'grid-rows-[1fr] opacity-100',
+      )}
+    >
+      <div className="overflow-hidden">
+        <DateRail day={display.day} time={display.time} muted={isDone}>
+          <div className="flex items-start gap-1 md:gap-3">
+            <button
+              type="button"
+              onClick={() => onToggle(ev.id)}
+              aria-pressed={isDone}
+              aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+              className="relative inline-flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-[color,transform] duration-[var(--duration-micro)] ease-out-quart hover:text-done active:scale-[0.98] md:size-8"
+            >
+              <Circle
+                className={cn(
+                  'absolute h-4 w-4 transition-opacity duration-[var(--duration-std)] ease-out-quart',
+                  isDone ? 'opacity-0' : 'opacity-100',
+                )}
+                strokeWidth={1.75}
+              />
+              <CheckCircle2
+                className={cn(
+                  'absolute h-4 w-4 text-done transition-opacity duration-[var(--duration-std)] ease-out-quart',
+                  isDone ? 'opacity-100' : 'opacity-0',
+                )}
+                strokeWidth={1.75}
+              />
+            </button>
+            <Link href={`/events/${ev.id}`} className="min-w-0 flex-1 py-2 md:py-0.5">
+              <p
+                className={cn(
+                  'w-fit max-w-full truncate text-sm bg-no-repeat [background-image:linear-gradient(currentColor,currentColor)] [background-position:0_58%] [background-size:0_1px] transition-[color,background-size] duration-[var(--duration-std)] ease-out-quart',
+                  isDone
+                    ? 'text-muted-foreground [background-size:100%_1px]'
+                    : emphasize
+                      ? 'font-medium text-foreground'
+                      : 'text-muted-foreground',
+                )}
+              >
+                {ev.title}
+              </p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[11px] text-muted-foreground">
+                <span className="inline-block h-2.5 w-0.5" style={{ backgroundColor: ev.course.color }} />
+                <span>{ev.course.code ?? ev.course.name}</span>
+                <TypeBadge type={ev.type} />
+                {!isDone && <HandInTag type={ev.type} />}
+                <span className={STATUS_CLS[status]}>{status}</span>
+              </p>
+            </Link>
+          </div>
+        </DateRail>
       </div>
-    </DateRail>
+    </div>
   )
 })
 
@@ -117,6 +152,8 @@ export function EventList({
   const [doneById, setDoneById] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(initialEvents.map(ev => [ev.id, ev.isDone]))
   )
+  const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set())
+  const exitTimers = useRef<Record<string, number>>({})
 
   const displayById = useMemo(() => {
     const now = new Date()
@@ -125,7 +162,10 @@ export function EventList({
 
   const { grouped, dateKeys } = useMemo(() => {
     const visible = overdueOnly
-      ? initialEvents.filter(ev => !doneById[ev.id] && displayById.get(ev.id)!.isPast)
+      ? initialEvents.filter(ev => {
+          const past = displayById.get(ev.id)!.isPast
+          return past && (!doneById[ev.id] || exitingIds.has(ev.id))
+        })
       : initialEvents
     const groups: Record<string, ListEvent[]> = {}
     for (const ev of visible) {
@@ -135,7 +175,7 @@ export function EventList({
     }
     const keys = Object.keys(groups).sort()
     return { grouped: groups, dateKeys: keys }
-  }, [initialEvents, displayById, overdueOnly, doneById])
+  }, [initialEvents, displayById, overdueOnly, doneById, exitingIds])
 
   function buildParams(overrides: Record<string, string>) {
     const sp = new URLSearchParams()
@@ -163,6 +203,18 @@ export function EventList({
   }
 
   const toggleDone = useCallback(async (id: string) => {
+    const nextDone = !doneById[id]
+    if (overdueOnly && nextDone) {
+      setExitingIds(prev => new Set(prev).add(id))
+      window.clearTimeout(exitTimers.current[id])
+      exitTimers.current[id] = window.setTimeout(() => {
+        setExitingIds(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }, 280)
+    }
     const flip = () => setDoneById(prev => ({ ...prev, [id]: !prev[id] }))
     flip()
     try {
@@ -170,9 +222,17 @@ export function EventList({
       if (!res.ok) throw new Error()
     } catch {
       flip()
+      if (overdueOnly && nextDone) {
+        window.clearTimeout(exitTimers.current[id])
+        setExitingIds(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }
       toast.error('Failed to update')
     }
-  }, [])
+  }, [doneById, overdueOnly])
 
   return (
     <PageShell>
@@ -260,9 +320,13 @@ export function EventList({
       </div>
 
       {dateKeys.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">
-          {overdueOnly ? 'Nothing overdue.' : 'No events match these filters.'}
-        </p>
+        <EmptyState
+          icon={ListChecks}
+          title={overdueOnly ? 'Nothing overdue' : 'No events'}
+          description={overdueOnly ? 'You are caught up on open work that has already started.' : 'Nothing matches these filters. Add an event or clear the filters.'}
+          actionLabel={overdueOnly ? 'Show all events' : 'Add event'}
+          actionHref={overdueOnly ? '/list' : '/events/new'}
+        />
       ) : (
         <div className="space-y-8">
           {dateKeys.map(key => (
@@ -279,6 +343,7 @@ export function EventList({
                     key={ev.id}
                     ev={ev}
                     isDone={doneById[ev.id]}
+                    exiting={exitingIds.has(ev.id)}
                     display={displayById.get(ev.id)!}
                     onToggle={toggleDone}
                   />

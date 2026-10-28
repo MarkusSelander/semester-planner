@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { InlineSpinner } from '@/components/shared/InlineSpinner'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { allDayToISO, zonedDateTimeToISO } from '@/lib/dates'
@@ -245,7 +246,7 @@ export function NewEventForm({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create event'}</Button>
+          <Button type="submit" disabled={loading} aria-busy={loading}>{loading ? <><InlineSpinner className="mr-1" /> Creating…</> : 'Create event'}</Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
         </div>
       </form>
