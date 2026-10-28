@@ -1,0 +1,161 @@
+/* Loaded after react-big-calendar.css so these tokens win in light and dark. */
+
+.rbc-calendar {
+  font-family: inherit;
+  color: var(--foreground);
+}
+
+.rbc-toolbar {
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.rbc-toolbar .rbc-toolbar-label {
+  font-family: var(--font-heading), Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.rbc-toolbar button,
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus,
+.rbc-toolbar button:active,
+.rbc-toolbar button:active:hover,
+.rbc-toolbar button:active:focus,
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover,
+.rbc-toolbar button.rbc-active:focus {
+  color: var(--muted-foreground);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  padding: 0.3rem 0.15rem;
+  margin: 0 0.55rem 0 0;
+  font-size: 0.8rem;
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus {
+  color: var(--foreground);
+}
+
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover,
+.rbc-toolbar button.rbc-active:focus {
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
+}
+
+.rbc-btn-group button + button,
+.rbc-rtl .rbc-btn-group button + button,
+.rbc-btn-group + .rbc-btn-group,
+.rbc-btn-group + button {
+  margin-left: 0;
+}
+
+.rbc-btn-group > button:first-child:not(:last-child),
+.rbc-btn-group > button:last-child:not(:first-child),
+.rbc-btn-group > button:not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+
+.rbc-header {
+  border-bottom-color: var(--border);
+  padding: 0.5rem 0.25rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.rbc-header + .rbc-header,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-month-row + .rbc-month-row,
+.rbc-time-header-content,
+.rbc-timeslot-group,
+.rbc-day-slot .rbc-time-slot,
+.rbc-time-content,
+.rbc-time-header > .rbc-row:first-child {
+  border-color: var(--border);
+}
+
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.rbc-off-range {
+  color: var(--muted-foreground);
+  opacity: 0.55;
+}
+
+.rbc-off-range-bg {
+  background: color-mix(in oklab, var(--muted) 70%, var(--background));
+}
+
+.rbc-today {
+  background-color: color-mix(in oklab, var(--primary) 16%, var(--card));
+}
+
+.rbc-event {
+  border-radius: 0.125rem;
+}
+
+.rbc-event:focus {
+  outline: 2px solid var(--ring);
+}
+
+.rbc-selected {
+  background-color: var(--primary) !important;
+}
+
+.rbc-show-more {
+  color: var(--primary);
+  background-color: transparent;
+}
+
+.rbc-overlay {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border-color: var(--border);
+}
+
+.rbc-overlay-header {
+  border-bottom-color: var(--border);
+}
+
+.rbc-current-time-indicator {
+  background-color: var(--primary);
+}
+
+.rbc-label,
+.rbc-time-header-gutter {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+
+.rbc-time-view-resources .rbc-time-gutter,
+.rbc-time-view-resources .rbc-time-header-gutter {
+  background-color: var(--card);
+}
+
+.rbc-agenda-view table.rbc-agenda-table,
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell {
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.rbc-agenda-empty {
+  color: var(--muted-foreground);
+}

@@ -7,6 +7,7 @@ import { format, parse, startOfWeek, getDay, addDays, isSameDay, startOfDay, isB
 import { enUS } from 'date-fns/locale/en-US'
 import { CalendarDays, Rows3 } from 'lucide-react'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import './calendar.css'
 import { isActionRequired, mustHandIn, TypeBadge } from '@/components/event-type'
 import { getBrowserTimezone, toDateInputValue } from '@/lib/dates'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -214,9 +215,9 @@ export function CalendarView({ initialEvents }: { initialEvents: CalendarEvent[]
                 {format(timelineDays[0], 'd MMM')} – {format(timelineDays[timelineDays.length - 1], 'd MMM yyyy')}
               </p>
               <div className="flex gap-2">
-                <button onClick={prevTimeline} className="field-select w-auto px-3">Prev</button>
-                <button onClick={() => setDate(new Date())} className="field-select w-auto px-3">Today</button>
-                <button onClick={nextTimeline} className="field-select w-auto px-3">Next</button>
+                <button onClick={prevTimeline} className="px-1 text-sm text-muted-foreground hover:text-foreground">Prev</button>
+                <button onClick={() => setDate(new Date())} className="px-1 text-sm text-muted-foreground hover:text-foreground">Today</button>
+                <button onClick={nextTimeline} className="px-1 text-sm text-muted-foreground hover:text-foreground">Next</button>
               </div>
             </div>
 

@@ -27,7 +27,7 @@ function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolea
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm transition-colors duration-200 ease-out-quart',
+        'flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm transition-colors duration-200 ease-out-quart outline-none focus-visible:text-foreground',
         active
           ? 'border-primary font-medium text-foreground'
           : 'border-transparent text-muted-foreground hover:text-foreground',
